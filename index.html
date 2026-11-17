@@ -8,6 +8,16 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23254edb'/%3E%3Cpath d='M14 30 L32 14 L50 30 V50 A2 2 0 0 1 48 52 H16 A2 2 0 0 1 14 50 Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M26 52 V36 H38 V52' fill='none' stroke='%2393c5fd' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23254edb'/%3E%3Cpath d='M14 30 L32 14 L50 30 V50 A2 2 0 0 1 48 52 H16 A2 2 0 0 1 14 50 Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M26 52 V36 H38 V52' fill='none' stroke='%2393c5fd' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#254edb" />
+
+  <script>
+    // =========================================================================
+    // ★ SUPABASE CLOUD CREDENTIALS — PASTE ONCE HERE (LINES 15–16) ★
+    // =========================================================================
+    // Paste your Supabase Project URL and Anon Public Key between the quotes below:
+    const DEFAULT_SUPABASE_URL = ''; // e.g. 'https://abcdefghijk.supabase.co'
+    const DEFAULT_SUPABASE_ANON_KEY = ''; // e.g. 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -888,7 +898,7 @@
         <div id="cloud-credentials-section" class="space-y-4">
           <!-- Tip for Hardcoding Keys Once -->
           <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 leading-relaxed">
-            <strong>💡 Pro Tip (Never Paste Keys Again):</strong> Open <code>index.html</code> in your GitHub repo, search for <code>DEFAULT_SUPABASE_URL</code> (around line 530), and paste your URL and Anon Key inside the quotes once. Then every device (PC, Phone, Contractor) connects automatically!
+            <strong>💡 Pro Tip (Never Paste Keys Again):</strong> Open <code>index.html</code> in your GitHub repo and look right at the very top of the file (<strong>Lines 15–16</strong>) for <code>DEFAULT_SUPABASE_URL</code> and <code>DEFAULT_SUPABASE_ANON_KEY</code>. Paste your URL and Key inside the quotes once—then every device (PC, Phone, Contractor) connects automatically!
           </div>
 
           <!-- Step 1: 1-Click SQL Setup Script -->
@@ -964,14 +974,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // 0. OPTIONAL HARDCODED SUPABASE CREDENTIALS (PASTE ONCE HERE FOR GITHUB)
-    // =========================================================================
-    // If you paste your Supabase Project URL and Anon Public Key between the quotes below,
-    // you will NEVER have to copy-paste them in the browser or on your phone again!
-    const DEFAULT_SUPABASE_URL = ''; // e.g. 'https://xyzcompany.supabase.co'
-    const DEFAULT_SUPABASE_ANON_KEY = ''; // e.g. 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-
     // =========================================================================
     // 1. BUILT-IN CATEGORY ICONS & BILINGUAL DICTIONARY (EN / FR)
     // =========================================================================
