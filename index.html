@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Renovation Studio — Project Hub, Templates &amp; Cloud Collaboration</title>
   <!-- Built-in Browser Tab Icon (Favicon) & iPhone/Android Home Screen Icon -->
-  <!-- Tip: To use your own custom image, upload "icon.png" to your GitHub repo and change href="icon.png" below -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23254edb'/%3E%3Cpath d='M14 30 L32 14 L50 30 V50 A2 2 0 0 1 48 52 H16 A2 2 0 0 1 14 50 Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M26 52 V36 H38 V52' fill='none' stroke='%2393c5fd' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23254edb'/%3E%3Cpath d='M14 30 L32 14 L50 30 V50 A2 2 0 0 1 48 52 H16 A2 2 0 0 1 14 50 Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M26 52 V36 H38 V52' fill='none' stroke='%2393c5fd' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#254edb" />
@@ -63,6 +62,7 @@
 
   <!-- Hidden File Inputs -->
   <input type="file" id="json-file-input" accept=".json,application/json" class="hidden" onchange="handleImportJSON(event)" />
+  <input type="file" id="single-project-file-input" accept=".json,application/json" class="hidden" onchange="handleImportSingleProjectJSON(event)" />
   <input type="file" id="preset-file-input" accept=".json,application/json" class="hidden" onchange="handleImportPresetJSON(event)" />
   <input type="file" id="plan-image-input" accept="image/*" class="hidden" onchange="handlePlanImageUpload(event)" />
 
@@ -79,24 +79,22 @@
             <div class="flex items-center gap-2 flex-wrap">
               <h1 id="app-title" class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">Renovation Studio</h1>
               <span id="badge-locked-project" class="hidden px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🔒 Single-Project Shared Link</span>
-              <!-- Live Cloud Status Badge (Click to reconnect or configure) -->
-              <button type="button" onclick="handleCloudBadgeClick()" id="cloud-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer" title="Click to reconnect or configure Supabase Cloud Sync">
+              <!-- Live Cloud Status Badge -->
+              <button type="button" onclick="handleCloudBadgeClick()" id="cloud-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer" title="Click to force sync or configure Supabase Cloud">
                 <span id="cloud-status-dot">⚪</span>
                 <span id="cloud-status-text" data-i18n="cloudLocal">Local Only</span>
               </button>
             </div>
-            <p id="app-subtitle" class="text-xs text-slate-500" data-i18n="appSubtitle">Multi-Project Hub, Templates, Preset Packs &amp; Isolated Client/Contractor Sharing</p>
+            <p id="app-subtitle" class="text-xs text-slate-500" data-i18n="appSubtitle">Multi-Project Hub, Single-Project .JSON Save/Load &amp; Live Cloud Sync</p>
           </div>
         </div>
 
         <!-- Role Switcher + Hub Button + Cloud + Language + Print -->
         <div class="flex flex-wrap items-center gap-2 no-print">
-          <!-- Back to Project Hub Button (Hidden when locked to single project) -->
           <button type="button" onclick="goToHub()" id="btn-nav-hub" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white hover:bg-slate-800 transition cursor-pointer">
             <span>🗂️</span> <span data-i18n="allProjectsHub">All Projects Hub</span>
           </button>
 
-          <!-- Owner / Contractor / Client Role Switcher -->
           <div id="role-switcher-group" class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
             <button type="button" onclick="setRole('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">
               👑 <span data-i18n="roleOwner">Owner</span>
@@ -106,9 +104,9 @@
             </button>
           </div>
 
-          <!-- Cloud Sync & Share Button -->
+          <!-- 1-Click Push to Phone / Cloud Button -->
           <button type="button" onclick="openCloudModal()" id="btn-cloud-config" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition cursor-pointer">
-            <span>☁️</span> <span data-i18n="cloudSyncBtn">Share / Cloud</span>
+            <span>☁️</span> <span data-i18n="cloudSyncBtn">Share / Cloud Sync</span>
           </button>
 
           <!-- Instant Language Switcher -->
@@ -123,19 +121,19 @@
         </div>
       </div>
 
-      <!-- Row 2: Project Bar (Shown inside Workspace; Locked elements hidden for isolated Contractor/Client links) -->
+      <!-- Row 2: Project Bar + Single-Project JSON Save/Load -->
       <div id="workspace-subheader" class="pt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 no-print">
         <div class="flex flex-wrap items-center gap-2 flex-1">
           <!-- Unlocked Owner Project Switcher -->
-          <div id="owner-project-controls" class="flex flex-wrap items-center gap-2">
+          <div id="owner-project-controls" class="flex flex-wrap items-center gap-1.5">
             <label for="project-select" class="text-xs font-bold uppercase tracking-wider text-slate-500" data-i18n="activeProject">Project:</label>
-            <select id="project-select" onchange="switchProject(this.value)" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 min-w-[210px] max-w-full">
+            <select id="project-select" onchange="switchProject(this.value)" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 min-w-[200px] max-w-full">
             </select>
             <button type="button" onclick="openProjectModal('new')" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 transition cursor-pointer">
               + <span data-i18n="newProject">New</span>
             </button>
             <button type="button" onclick="duplicateCurrentProject()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition cursor-pointer" title="Create an independent copy for a new contractor quote option">
-              ⧉ <span data-i18n="duplicate">Duplicate Option</span>
+              ⧉ <span data-i18n="duplicate">Duplicate</span>
             </button>
             <button type="button" onclick="openProjectModal('rename')" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition cursor-pointer">
               ✎ <span data-i18n="rename">Rename</span>
@@ -149,15 +147,25 @@
           </div>
         </div>
 
-        <!-- Preset Packs + Geometry Toggle -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" onclick="openPresetModal()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer" title="Save or load reusable material kits (Drywall, Screws, Plumbing) across projects">
-            <span>🧰</span> <span data-i18n="presetPacksBtn">Material Presets (.json)</span>
+        <!-- Single-Project JSON Save/Load + Material Presets + Geometry Toggle -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <!-- Save ONLY Current Project as .JSON -->
+          <button type="button" onclick="exportSingleProjectJSON()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 transition cursor-pointer" title="Download ONLY this active project as a .json file so you never lose your work when updating versions">
+            <span>💾</span> <span data-i18n="saveSingleProjBtn">Save Project (.json)</span>
           </button>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+          <!-- Load / Import a Single Project .JSON -->
+          <button type="button" onclick="document.getElementById('single-project-file-input').click()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-900 border border-sky-300 hover:bg-sky-100 transition cursor-pointer" title="Import a saved project .json file into Renovation Studio and auto-sync to Cloud">
+            <span>📂</span> <span data-i18n="loadSingleProjBtn">Load Project (.json)</span>
+          </button>
+
+          <button type="button" onclick="openPresetModal()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer" title="Save or load reusable material kits (Drywall, Screws, Plumbing) across projects">
+            <span>🧰</span> <span data-i18n="presetPacksBtn">Presets</span>
+          </button>
+
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200">
             <input type="checkbox" id="toggle-geometry-module" onchange="toggleGeometryModule(this.checked)" class="rounded text-brand-600 focus:ring-brand-500 w-4 h-4" />
-            <span class="text-xs font-semibold text-slate-700" data-i18n="showGeometryModule">Plans &amp; Surface Calc</span>
+            <span class="text-xs font-semibold text-slate-700" data-i18n="showGeometryModule">Plans &amp; Calc</span>
           </label>
         </div>
       </div>
@@ -165,10 +173,9 @@
   </header>
 
   <!-- ======================================================================= -->
-  <!-- VIEW A: MAIN PROJECT HUB DASHBOARD (Choose or Create Project + Templates) -->
+  <!-- VIEW A: MAIN PROJECT HUB DASHBOARD                                       -->
   <!-- ======================================================================= -->
   <section id="hub-view" class="hidden max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 w-full no-print">
-    <!-- Hero Banner -->
     <div class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
       <div class="space-y-2 max-w-2xl">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-200 border border-brand-400/30">
@@ -176,18 +183,18 @@
         </span>
         <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight" data-i18n="hubWelcomeTitle">Choose a Project or Start from a Template</h2>
         <p class="text-xs sm:text-sm text-slate-300 leading-relaxed" data-i18n="hubWelcomeSub">
-          Create multiple quote versions for contractors, upload custom floor plans for each project, import reusable material preset packs (.json), and send isolated single-project links to each client or contractor.
+          Save any individual project as a portable <code>.json</code> file, import projects across versions, push edits to your phone via Supabase, and send isolated single-project links to contractors.
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2.5 shrink-0">
         <button type="button" onclick="openProjectModal('new')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-brand-600 hover:bg-brand-500 text-white shadow-sm transition cursor-pointer">
           + <span data-i18n="createNewProjectBtn">Create New Project</span>
         </button>
+        <button type="button" onclick="document.getElementById('single-project-file-input').click()" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer">
+          📂 <span data-i18n="loadSingleProjBtn">Load Project (.json)</span>
+        </button>
         <button type="button" onclick="exportAllProjectsJSON()" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
           💾 <span data-i18n="backupAllBtn">Backup All (.json)</span>
-        </button>
-        <button type="button" onclick="document.getElementById('json-file-input').click()" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
-          📂 <span data-i18n="restoreAllBtn">Restore Backup (.json)</span>
         </button>
       </div>
     </div>
@@ -208,7 +215,6 @@
         <p class="text-xs text-slate-500" data-i18n="startFromTemplateSub">Click any template to create a new pre-structured project in 1 click</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Template 1: Bathroom -->
         <div onclick="quickCreateFromTemplate('bathroom_generic')" class="bg-white rounded-2xl p-4 border border-slate-200 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between gap-3">
           <div>
             <span class="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 flex items-center justify-center text-xl mb-3">🚿</span>
@@ -218,7 +224,6 @@
           <span class="text-xs font-bold text-brand-600" data-i18n="useTemplateBtn">+ Use Template →</span>
         </div>
 
-        <!-- Template 2: Kitchen -->
         <div onclick="quickCreateFromTemplate('kitchen')" class="bg-white rounded-2xl p-4 border border-slate-200 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between gap-3">
           <div>
             <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-xl mb-3">🍳</span>
@@ -228,7 +233,6 @@
           <span class="text-xs font-bold text-brand-600" data-i18n="useTemplateBtn">+ Use Template →</span>
         </div>
 
-        <!-- Template 3: Full House / Apartment -->
         <div onclick="quickCreateFromTemplate('house')" class="bg-white rounded-2xl p-4 border border-slate-200 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between gap-3">
           <div>
             <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xl mb-3">🏠</span>
@@ -238,7 +242,6 @@
           <span class="text-xs font-bold text-brand-600" data-i18n="useTemplateBtn">+ Use Template →</span>
         </div>
 
-        <!-- Template 4: Blank Custom -->
         <div onclick="quickCreateFromTemplate('blank')" class="bg-white rounded-2xl p-4 border border-slate-200 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between gap-3">
           <div>
             <span class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center text-xl mb-3">📐</span>
@@ -385,7 +388,7 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-          <!-- Left: Default 2D Bathroom Blueprint (Shown if Bathroom blueprint is enabled on this project) -->
+          <!-- Left: Default 2D Bathroom Blueprint -->
           <div id="default-bath-svg-box" class="lg:col-span-5 bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col items-center">
             <svg viewBox="0 0 380 320" class="w-full max-w-[340px] h-auto select-none">
               <rect x="48" y="30" width="268" height="248" fill="#ffffff" stroke="#334155" stroke-width="6" />
@@ -567,7 +570,7 @@
 
   <!-- ================= MODALS ================= -->
 
-  <!-- Material Preset Packs Modal (Save / Merge Common Items via JSON or Built-In Kits) -->
+  <!-- Material Preset Packs Modal -->
   <div id="preset-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
       <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -582,7 +585,6 @@
           Save any segment (like your BA13 Drywall &amp; Studs list or Plumbing kit) as a reusable <code>.json</code> preset file, and merge it into any new project without overwriting your existing work!
         </p>
 
-        <!-- 1. Built-in Quick Insert Kits -->
         <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
           <div class="font-bold text-amber-950" data-i18n="quickInsertKitTitle">1. Quick-Insert Built-In Material Kits into Current Project</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -595,7 +597,6 @@
           </div>
         </div>
 
-        <!-- 2. Export a Segment from Current Project as a Preset .json -->
         <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
           <div class="font-bold text-slate-800" data-i18n="exportPresetTitle">2. Save a Segment as a Reusable Preset File (.json)</div>
           <div class="flex items-center gap-2">
@@ -606,7 +607,6 @@
           </div>
         </div>
 
-        <!-- 3. Import & Merge a Preset .json into Current Project -->
         <div class="p-3.5 rounded-xl bg-brand-50/60 border border-brand-200 space-y-2">
           <div class="font-bold text-brand-950" data-i18n="importPresetTitle">3. Load &amp; Merge a Preset File (.json) into Current Project</div>
           <p class="text-[11px] text-brand-800" data-i18n="importPresetSub">Adds the segments/items from your .json file directly into the active project and auto-syncs with Supabase.</p>
@@ -795,7 +795,7 @@
     </div>
   </div>
 
-  <!-- New / Rename Project Modal (With Rich Templates) -->
+  <!-- New / Rename Project Modal -->
   <div id="project-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
       <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
@@ -847,19 +847,22 @@
       </div>
       <div class="p-5 space-y-4 text-xs">
         <p class="text-slate-600 leading-relaxed" data-i18n="exportModalHint">
-          Download the standalone A4 Print-Ready Report (.html) to open and save as PDF in any browser, or export a spreadsheet (.csv) for Excel / Google Sheets.
+          Download the standalone A4 Print-Ready Report (.html) to open and save as PDF in any browser, save this single project (.json) for future versions, or export a spreadsheet (.csv).
         </p>
         <div id="export-summary-box" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5"></div>
         <div class="space-y-2.5">
           <button type="button" onclick="downloadPrintableHTML()" class="w-full py-3 px-4 rounded-xl bg-brand-600 text-white font-bold text-xs sm:text-sm hover:bg-brand-700 transition cursor-pointer">
             📄 Download Print-Ready A4 Report (.html → Auto Save as PDF)
           </button>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="exportSingleProjectJSON()" class="py-2.5 px-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition cursor-pointer">
+              💾 Save This Project (.json)
+            </button>
             <button type="button" onclick="downloadProjectCSV()" class="py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold hover:bg-emerald-100 transition cursor-pointer">
-              📊 Export Spreadsheet (.csv)
+              📊 Export CSV (.csv)
             </button>
             <button type="button" onclick="exportAllProjectsJSON()" class="py-2.5 px-3 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold hover:bg-slate-200 transition cursor-pointer">
-              💾 Backup All Projects (.json)
+              🗂️ Backup All (.json)
             </button>
           </div>
         </div>
@@ -874,16 +877,21 @@
         <div class="flex items-center gap-2.5">
           <span class="text-lg">☁️</span>
           <div>
-            <h3 class="text-sm sm:text-base font-bold" data-i18n="cloudModalTitle">Supabase Real-Time Cloud Sync &amp; Isolated Project Sharing</h3>
-            <p class="text-[11px] text-slate-400" data-i18n="cloudModalSub">Auto-reconnects on mobile wake • Share single-project locked links with contractors or clients</p>
+            <h3 class="text-sm sm:text-base font-bold" data-i18n="cloudModalTitle">Supabase Real-Time Cloud Sync &amp; Phone Sharing</h3>
+            <p class="text-[11px] text-slate-400" data-i18n="cloudModalSub">Pushes your PC changes to Supabase first before generating your Phone/Contractor link</p>
           </div>
         </div>
         <button type="button" onclick="closeModal('cloud-modal')" class="text-slate-300 hover:text-white cursor-pointer">✕</button>
       </div>
 
       <div class="p-5 space-y-4 overflow-y-auto text-xs">
-        <!-- Step 1: 1-Click SQL Setup Script -->
         <div id="cloud-credentials-section" class="space-y-4">
+          <!-- Tip for Hardcoding Keys Once -->
+          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 leading-relaxed">
+            <strong>💡 Pro Tip (Never Paste Keys Again):</strong> Open <code>index.html</code> in your GitHub repo, search for <code>DEFAULT_SUPABASE_URL</code> (around line 530), and paste your URL and Anon Key inside the quotes once. Then every device (PC, Phone, Contractor) connects automatically!
+          </div>
+
+          <!-- Step 1: 1-Click SQL Setup Script -->
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span class="font-bold text-slate-800" data-i18n="sqlStepTitle">1. First-Time Supabase SQL Table Setup (1-Click Copy)</span>
@@ -910,35 +918,35 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button type="button" onclick="connectAndSyncCloud()" class="py-2.5 px-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition cursor-pointer" data-i18n="btnConnectSync">
-              🔌 Connect &amp; Sync Now
+              🔌 Connect &amp; Push PC Edits
             </button>
             <button type="button" onclick="pushAllProjectsToCloud(true)" class="py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold hover:bg-emerald-100 transition cursor-pointer" data-i18n="btnPushCloud">
-              ⬆️ Push Local to Cloud
+              ⬆️ Force Push PC → Cloud
             </button>
-            <button type="button" onclick="pullAllProjectsFromCloud(true)" class="py-2.5 px-3 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-bold hover:bg-sky-100 transition cursor-pointer" data-i18n="btnPullCloud">
-              ⬇️ Pull Latest from Cloud
+            <button type="button" onclick="pullAllProjectsFromCloud(true, false, true)" class="py-2.5 px-3 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-bold hover:bg-sky-100 transition cursor-pointer" data-i18n="btnPullCloud">
+              ⬇️ Force Pull Cloud → PC
             </button>
           </div>
         </div>
 
-        <!-- Step 3: Shareable Magic Links (With Single-Project Lock Option) -->
+        <!-- Step 3: Shareable Magic Links (Auto-pushes current project before copying link!) -->
         <div class="p-4 rounded-xl bg-brand-50/70 border border-brand-200 space-y-2.5">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="font-bold text-brand-900" data-i18n="magicLinkTitle">Shareable Project Links (WhatsApp / Email)</span>
+            <span class="font-bold text-brand-900" data-i18n="magicLinkTitle">Shareable Project Links (Auto-Pushes Your Latest Edits First!)</span>
             <label class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand-800 cursor-pointer">
               <input type="checkbox" id="magic-include-keys" checked class="rounded text-brand-600" />
               <span data-i18n="includeKeysLbl">Embed Cloud Keys</span>
             </label>
           </div>
           <p class="text-[11px] text-brand-800 leading-relaxed" data-i18n="magicLinkHint">
-            <strong>🔒 Isolated Contractor / Client Links:</strong> When you send the <strong>Locked Contractor/Client Link</strong> below, the recipient can <strong>only view and edit this single project</strong>—they cannot see the Project Hub or jump to your other projects!
+            Clicking either button below <strong>automatically uploads your current PC changes to Supabase first</strong> and copies a ready-to-open link for your phone or contractor!
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <button type="button" onclick="copyShareableMagicLink('contractor', true)" class="py-2.5 px-3 rounded-xl bg-amber-500 text-slate-950 font-extrabold hover:bg-amber-400 transition cursor-pointer">
-              🔒👷 <span data-i18n="copyContractorLink">Copy Locked Contractor/Client Link (Single Project Only)</span>
+              🔒👷 <span data-i18n="copyContractorLink">Push &amp; Copy Locked Contractor Link (Single Project)</span>
             </button>
             <button type="button" onclick="copyShareableMagicLink('owner', false)" class="py-2.5 px-3 rounded-xl bg-white text-slate-800 border border-slate-300 font-bold hover:bg-slate-50 transition cursor-pointer">
-              👑 <span data-i18n="copyOwnerLink">Copy Full Owner Link (All Projects Hub on My Phone)</span>
+              👑📱 <span data-i18n="copyOwnerLink">Push &amp; Copy Owner Link (For My Phone)</span>
             </button>
           </div>
         </div>
@@ -957,6 +965,14 @@
 
   <script>
     // =========================================================================
+    // 0. OPTIONAL HARDCODED SUPABASE CREDENTIALS (PASTE ONCE HERE FOR GITHUB)
+    // =========================================================================
+    // If you paste your Supabase Project URL and Anon Public Key between the quotes below,
+    // you will NEVER have to copy-paste them in the browser or on your phone again!
+    const DEFAULT_SUPABASE_URL = ''; // e.g. 'https://xyzcompany.supabase.co'
+    const DEFAULT_SUPABASE_ANON_KEY = ''; // e.g. 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+
+    // =========================================================================
     // 1. BUILT-IN CATEGORY ICONS & BILINGUAL DICTIONARY (EN / FR)
     // =========================================================================
     const CATEGORY_ICONS = {
@@ -973,11 +989,13 @@
 
     const I18N = {
       en: {
-        appSubtitle: 'Multi-Project Hub, Templates, Preset Packs & Isolated Client/Contractor Sharing',
+        appSubtitle: 'Multi-Project Hub, Single-Project .JSON Save/Load & Live Cloud Sync',
         allProjectsHub: 'All Projects Hub',
+        saveSingleProjBtn: 'Save Project (.json)',
+        loadSingleProjBtn: 'Load Project (.json)',
         hubBadge: 'Multi-Project Renovation Workspace',
         hubWelcomeTitle: 'Choose a Project or Start from a Template',
-        hubWelcomeSub: 'Create multiple quote versions for contractors, upload custom floor plans for each project, import reusable material preset packs (.json), and send isolated single-project links to each client or contractor.',
+        hubWelcomeSub: 'Save any individual project as a portable .json file, import projects across versions, push edits to your phone via Supabase, and send isolated single-project links to contractors.',
         createNewProjectBtn: 'Create New Project',
         backupAllBtn: 'Backup All (.json)',
         restoreAllBtn: 'Restore Backup (.json)',
@@ -993,7 +1011,7 @@
         tplBlankTitle: 'Blank Custom Project',
         tplBlankDesc: 'Clean empty segments ready for your custom items or for importing a saved Material Preset Pack (.json).',
         useTemplateBtn: '+ Use Template →',
-        presetPacksBtn: 'Material Presets (.json)',
+        presetPacksBtn: 'Presets',
         insertPresetBtn: 'Insert Preset Pack',
         presetModalTitle: 'Reusable Material Preset Packs (.json)',
         presetModalDesc: 'Save any segment (like your BA13 Drywall & Studs list or Plumbing kit) as a reusable .json preset file, and merge it into any new project without overwriting your existing work!',
@@ -1011,33 +1029,33 @@
         cloudLive: 'Cloud Live Sync',
         cloudSyncing: 'Syncing...',
         cloudError: 'Tap to Reconnect',
-        cloudSyncBtn: 'Share / Cloud',
+        cloudSyncBtn: 'Share / Cloud Sync',
         roleOwner: 'Owner',
         roleContractor: 'Contractor',
         siteUpdateTitle: 'Contractor Site Note & Procurement Log',
         siteUpdateHint: 'Leave a timestamped field update (e.g., ordered materials, site measurements, or schedule changes). Syncs live across phones.',
         saveNoteBtn: 'Save Note',
-        cloudModalTitle: 'Supabase Real-Time Cloud Sync & Isolated Project Sharing',
-        cloudModalSub: 'Auto-reconnects on mobile wake • Share single-project locked links with contractors or clients',
+        cloudModalTitle: 'Supabase Real-Time Cloud Sync & Phone Sharing',
+        cloudModalSub: 'Pushes your PC changes to Supabase first before generating your Phone/Contractor link',
         sqlStepTitle: '1. First-Time Supabase SQL Table Setup (1-Click Copy)',
         copySqlBtn: '📋 Copy SQL Setup Script',
         sqlStepHint: 'In your free Supabase project, open SQL Editor → + New Query, paste this script, and click Run to create the reno_projects table with real-time sync enabled.',
-        btnConnectSync: '🔌 Connect & Sync Now',
-        btnPushCloud: '⬆️ Push Local to Cloud',
-        btnPullCloud: '⬇️ Pull Latest from Cloud',
-        magicLinkTitle: 'Shareable Project Links (WhatsApp / Email)',
+        btnConnectSync: '🔌 Connect & Push PC Edits',
+        btnPushCloud: '⬆️ Force Push PC → Cloud',
+        btnPullCloud: '⬇️ Force Pull Cloud → PC',
+        magicLinkTitle: 'Shareable Project Links (Auto-Pushes Your Latest Edits First!)',
         includeKeysLbl: 'Embed Cloud Keys',
-        magicLinkHint: '🔒 Isolated Contractor / Client Links: When you send the Locked Contractor/Client Link below, the recipient can ONLY view and edit this single project—they cannot see the Project Hub or jump to your other projects!',
-        copyContractorLink: 'Copy Locked Contractor/Client Link (Single Project Only)',
-        copyOwnerLink: 'Copy Full Owner Link (All Projects Hub on My Phone)',
+        magicLinkHint: 'Clicking either button below automatically uploads your current PC changes to Supabase first and copies a ready-to-open link for your phone or contractor!',
+        copyContractorLink: 'Push & Copy Locked Contractor Link (Single Project)',
+        copyOwnerLink: 'Push & Copy Owner Link (For My Phone)',
         disconnectCloud: 'Disconnect Cloud Credentials',
         printExport: 'Print / PDF',
         activeProject: 'Project:',
         newProject: 'New',
-        duplicate: 'Duplicate Option',
+        duplicate: 'Duplicate',
         rename: 'Rename',
         delete: 'Delete',
-        showGeometryModule: 'Plans & Surface Calc',
+        showGeometryModule: 'Plans & Calc',
         resetFactory: 'Reset Default Projects',
         kpiFurniture: 'Furniture & Fixtures',
         kpiMaterials: 'Materials & Rough-In',
@@ -1081,14 +1099,16 @@
         status_ordered: '🚚 Ordered',
         status_delivered: '✅ Delivered',
         exportModalTitle: 'Print / Export Project Report',
-        exportModalHint: 'Download the standalone A4 Print-Ready Report (.html) to open and save as PDF in any browser, or export a spreadsheet (.csv) for Excel / Google Sheets.'
+        exportModalHint: 'Download the standalone A4 Print-Ready Report (.html) to open and save as PDF in any browser, save this single project (.json) for future versions, or export a spreadsheet (.csv).'
       },
       fr: {
-        appSubtitle: 'Hub Multi-Projets, Modèles, Packs Préréglés & Partage Isolé Client/Artisan',
+        appSubtitle: 'Hub Multi-Projets, Sauvegarde .JSON par Projet & Synchro Cloud Live',
         allProjectsHub: 'Hub Projets',
+        saveSingleProjBtn: 'Sauver Projet (.json)',
+        loadSingleProjBtn: 'Charger Projet (.json)',
         hubBadge: 'Espace Rénovation Multi-Projets',
         hubWelcomeTitle: 'Choisissez un Projet ou Démarrez d’un Modèle',
-        hubWelcomeSub: 'Créez plusieurs variantes de devis pour vos artisans, ajoutez vos plans 2D/3D par projet, importez vos packs de matériaux réutilisables (.json) et envoyez un lien verrouillé sur un seul projet à chaque client ou artisan.',
+        hubWelcomeSub: 'Enregistrez n’importe quel projet individuel en fichier .json portable, importez vos projets d’une version à l’autre, synchronisez sur votre téléphone via Supabase et partagez des liens isolés avec vos artisans.',
         createNewProjectBtn: 'Nouveau Projet',
         backupAllBtn: 'Sauvegarder Tout (.json)',
         restoreAllBtn: 'Charger Sauvegarde (.json)',
@@ -1104,7 +1124,7 @@
         tplBlankTitle: 'Projet Vierge Personnalisé',
         tplBlankDesc: 'Segments vides prêts pour vos articles ou pour importer un Pack de Matériaux (.json).',
         useTemplateBtn: '+ Utiliser ce modèle →',
-        presetPacksBtn: 'Packs Matériaux (.json)',
+        presetPacksBtn: 'Packs',
         insertPresetBtn: 'Insérer Pack Matériaux',
         presetModalTitle: 'Packs de Matériaux Réutilisables (.json)',
         presetModalDesc: 'Enregistrez n’importe quel segment (ex. kit Placo BA13 + rails/montants ou kit Plomberie) en fichier .json réutilisable, et insérez-le dans un nouveau projet sans écraser vos autres projets !',
@@ -1128,27 +1148,27 @@
         siteUpdateTitle: 'Note de Chantier Artisan & Suivi Commandes',
         siteUpdateHint: 'Notez l’avancement terrain ou les matériaux commandés (synchronisé en direct entre téléphones et PC).',
         saveNoteBtn: 'Enregistrer',
-        cloudModalTitle: 'Synchronisation Cloud (Supabase) & Partage Isolé par Projet',
-        cloudModalSub: 'Reconnexion auto sur mobile • Partagez un lien verrouillé sur un seul projet avec vos artisans/clients',
+        cloudModalTitle: 'Synchronisation Cloud (Supabase) & Partage Téléphone',
+        cloudModalSub: 'Envoie vos modifications PC vers Supabase avant de générer le lien Téléphone / Artisan',
         sqlStepTitle: '1. Création de la table SQL Supabase (Copie en 1 clic)',
         copySqlBtn: '📋 Copier le script SQL',
         sqlStepHint: 'Dans votre projet Supabase gratuit, ouvrez SQL Editor → + New Query, collez ce script et cliquez sur Run pour activer la table reno_projects en temps réel.',
-        btnConnectSync: '🔌 Connecter & Synchroniser',
-        btnPushCloud: '⬆️ Envoyer vers le Cloud',
-        btnPullCloud: '⬇️ Charger depuis le Cloud',
-        magicLinkTitle: 'Liens de Partage (WhatsApp / Email)',
+        btnConnectSync: '🔌 Connecter & Envoyer PC',
+        btnPushCloud: '⬆️ Forcer Envoi PC → Cloud',
+        btnPullCloud: '⬇️ Forcer Cloud → PC',
+        magicLinkTitle: 'Liens de Partage (Envoie d’abord vos modifications PC !)',
         includeKeysLbl: 'Inclure clés Cloud',
-        magicLinkHint: '🔒 Lien Isolé Artisan / Client : En envoyant le Lien Verrouillé ci-dessous, votre artisan ou client accède UNIQUEMENT à ce projet précis—il ne voit pas vos autres projets ni le Hub !',
-        copyContractorLink: 'Copier Lien Verrouillé Artisan/Client (Ce Projet Uniquement)',
-        copyOwnerLink: 'Copier Lien Complet Propriétaire (Tous les Projets)',
+        magicLinkHint: 'Cliquer sur l’un des boutons ci-dessous envoie automatiquement vos changements PC vers Supabase puis copie le lien prêt à ouvrir sur téléphone !',
+        copyContractorLink: 'Envoyer & Copier Lien Artisan Verrouillé (1 Projet)',
+        copyOwnerLink: 'Envoyer & Copier Lien Propriétaire (Pour Mon Téléphone)',
         disconnectCloud: 'Déconnecter le Cloud',
         printExport: 'Imprimer / PDF',
         activeProject: 'Projet :',
         newProject: 'Nouveau',
-        duplicate: 'Dupliquer Option',
+        duplicate: 'Dupliquer',
         rename: 'Renommer',
         delete: 'Supprimer',
-        showGeometryModule: 'Plans & Calcul Surfaces',
+        showGeometryModule: 'Plans & Surfaces',
         resetFactory: 'Rétablir Projets par Défaut',
         kpiFurniture: 'Meubles & Équipements',
         kpiMaterials: 'Matériaux & Gros Œuvre',
@@ -1192,13 +1212,10 @@
         status_ordered: '🚚 Commandé',
         status_delivered: '✅ Livré',
         exportModalTitle: 'Imprimer / Exporter le Rapport du Projet',
-        exportModalHint: 'Téléchargez le rapport A4 prêt à imprimer (.html) pour l’enregistrer en PDF, ou exportez le tableau (.csv) pour Excel / Google Sheets.'
+        exportModalHint: 'Téléchargez le rapport A4 prêt à imprimer (.html), sauvegardez uniquement ce projet (.json) pour les prochaines versions, ou exportez le tableau (.csv).'
       }
     };
 
-    // =========================================================================
-    // 1B. DYNAMIC CONTENT BILINGUAL RESOLVER (EN <-> FR)
-    // =========================================================================
     const CONTENT_FR_MAP = {
       'Bathroom Renovation — Île-de-France': 'Rénovation Salle de Bain — Île-de-France',
       'Guest WC Refresh — Template': 'Rénovation WC Invités — Modèle',
@@ -1316,8 +1333,8 @@
       return {
         lang: 'en',
         role: 'owner',
-        currentView: 'workspace', // 'hub' or 'workspace'
-        lockedProjectId: null,    // If set via ?locked=1, restricts user to ONLY this project
+        currentView: 'workspace',
+        lockedProjectId: null,
         statusFilter: 'all',
         activeProjectId: 'proj_idf_bath',
         projects: [
@@ -1334,7 +1351,7 @@
             planImages: [],
             contractorNote: 'Ready for demolition & rough plumbing inspection. 8 boxes of ARTENS Denali 30×90cm tiles & Valentin Ø90 siphon already delivered on site.',
             contractorNoteUpdatedAt: 'Initial Plan',
-            updatedAt: new Date().toISOString(),
+            updatedAt: '2025-01-01T00:00:00.000Z',
             segments: [
               {
                 id: 'seg_1',
@@ -1402,7 +1419,7 @@
             planImages: [],
             contractorNote: 'Starter template for a secondary WC refresh.',
             contractorNoteUpdatedAt: 'Template',
-            updatedAt: new Date().toISOString(),
+            updatedAt: '2025-01-01T00:00:00.000Z',
             segments: [
               {
                 id: 'seg_wc_1',
@@ -1433,7 +1450,6 @@
       };
     }
 
-    // Generator for Category Templates (Bathroom, Kitchen, House, Blank)
     function buildProjectFromTemplate(tplKey, customName) {
       const newId = 'proj_' + Date.now();
       if (tplKey === 'bathroom_idf') {
@@ -1565,7 +1581,6 @@
         };
       }
 
-      // Blank Custom Project
       return {
         id: newId,
         name: customName || 'Custom Renovation Project',
@@ -1600,21 +1615,29 @@
     let syncTimeout = null;
     let isApplyingRemoteUpdate = false;
 
+    // Reads across all V1/V2/V3 storage keys so no previous work is ever lost
     function loadAppState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('renovation_studio_v2_cloud_state');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
-            if (!parsed.role) parsed.role = 'owner';
-            if (!parsed.currentView) parsed.currentView = 'workspace';
-            parsed.projects.forEach(p => {
-              if (!Array.isArray(p.planImages)) p.planImages = [];
-              if (typeof p.netAreaM2 !== 'number') p.netAreaM2 = 10.72;
-              if (typeof p.boxCoverageM2 !== 'number') p.boxCoverageM2 = 1.62;
-              if (p.id === 'proj_idf_bath' && typeof p.useDefaultBathSvg === 'undefined') p.useDefaultBathSvg = true;
-            });
-            return parsed;
+        const candidateKeys = [
+          STORAGE_KEY,
+          'renovation_studio_v2_cloud_state',
+          'renovation_studio_v1_state'
+        ];
+        for (const k of candidateKeys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+              if (!parsed.role) parsed.role = 'owner';
+              if (!parsed.currentView) parsed.currentView = 'workspace';
+              parsed.projects.forEach(p => {
+                if (!Array.isArray(p.planImages)) p.planImages = [];
+                if (typeof p.netAreaM2 !== 'number') p.netAreaM2 = 10.72;
+                if (typeof p.boxCoverageM2 !== 'number') p.boxCoverageM2 = 1.62;
+                if (p.id === 'proj_idf_bath' && typeof p.useDefaultBathSvg === 'undefined') p.useDefaultBathSvg = true;
+              });
+              return parsed;
+            }
           }
         }
       } catch (e) {
@@ -1625,10 +1648,23 @@
 
     function loadCloudConfig() {
       try {
-        const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
-        if (raw) return JSON.parse(raw);
+        const candidateCfgKeys = [
+          CLOUD_CONFIG_KEY,
+          'renovation_studio_v1_supabase_cfg',
+          'supabase_config'
+        ];
+        for (const k of candidateCfgKeys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.url && parsed.key) return parsed;
+          }
+        }
       } catch (e) {}
-      return { url: '', key: '' };
+      return {
+        url: DEFAULT_SUPABASE_URL ? DEFAULT_SUPABASE_URL.trim() : '',
+        key: DEFAULT_SUPABASE_ANON_KEY ? DEFAULT_SUPABASE_ANON_KEY.trim() : ''
+      };
     }
 
     function saveCloudConfig() {
@@ -1640,7 +1676,10 @@
     function saveAppState(skipCloudSync = false) {
       try {
         const proj = getActiveProject();
-        if (proj) proj.updatedAt = new Date().toISOString();
+        if (proj && !skipCloudSync) {
+          proj.updatedAt = new Date().toISOString();
+          proj.hasLocalEdits = true;
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       } catch (e) {
         console.warn('Storage write error:', e);
@@ -1651,7 +1690,7 @@
     }
 
     // =========================================================================
-    // 2B. SUPABASE REAL-TIME CLOUD ENGINE + AUTO-HEALING ON MOBILE WAKE + LOCKED MODE
+    // 2B. SMART SUPABASE REAL-TIME SYNC (NEVER OVERWRITES NEWER LOCAL PC EDITS!)
     // =========================================================================
     function setCloudBadge(stateKey, customText) {
       const dot = document.getElementById('cloud-status-dot');
@@ -1724,7 +1763,8 @@
         setCloudBadge('syncing');
         supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.key);
 
-        await pullAllProjectsFromCloud(false, true);
+        // Smart two-way sync: compares timestamps so local PC edits push to Cloud instead of getting overwritten!
+        await smartSyncProjectsWithCloud();
 
         if (realtimeChannel) {
           try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
@@ -1759,6 +1799,85 @@
       }
     }
 
+    // Smart Two-Way Merge: Pushes newer local PC edits to Supabase, and pulls newer remote edits to Phone!
+    async function smartSyncProjectsWithCloud() {
+      if (!supabaseClient) return;
+      let query = supabaseClient.from('reno_projects').select('*');
+      if (appState.lockedProjectId) {
+        query = supabaseClient.from('reno_projects').select('*').eq('id', appState.lockedProjectId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const remoteRows = data || [];
+      const remoteMap = {};
+      remoteRows.forEach(r => {
+        if (r && r.id && r.data) {
+          remoteMap[r.id] = { data: r.data, updatedAt: r.data.updatedAt || r.updated_at || '1970-01-01' };
+        }
+      });
+
+      const toUpsert = [];
+      const mergedProjects = [];
+      const seenIds = new Set();
+
+      for (const localProj of appState.projects) {
+        if (appState.lockedProjectId && localProj.id !== appState.lockedProjectId) continue;
+        seenIds.add(localProj.id);
+        const rem = remoteMap[localProj.id];
+
+        if (!rem) {
+          // Local project doesn't exist in cloud yet -> push it up!
+          toUpsert.push({
+            id: localProj.id,
+            name: localProj.name,
+            data: localProj,
+            updated_at: new Date().toISOString()
+          });
+          mergedProjects.push(localProj);
+        } else {
+          const localTime = new Date(localProj.updatedAt || '2025-01-01').getTime();
+          const remoteTime = new Date(rem.updatedAt || '2025-01-01').getTime();
+
+          if (localProj.hasLocalEdits && localTime >= remoteTime) {
+            // Local PC version is newer -> push local PC edits to Supabase!
+            toUpsert.push({
+              id: localProj.id,
+              name: localProj.name,
+              data: localProj,
+              updated_at: new Date().toISOString()
+            });
+            mergedProjects.push(localProj);
+          } else {
+            // Cloud version is newer (e.g. opening link on Phone) -> use Cloud version!
+            mergedProjects.push(rem.data);
+          }
+        }
+      }
+
+      // Add any projects from Cloud that weren't in local storage yet
+      for (const remId of Object.keys(remoteMap)) {
+        if (!seenIds.has(remId)) {
+          mergedProjects.push(remoteMap[remId].data);
+        }
+      }
+
+      if (toUpsert.length > 0) {
+        await supabaseClient.from('reno_projects').upsert(toUpsert, { onConflict: 'id' });
+      }
+
+      if (mergedProjects.length > 0) {
+        isApplyingRemoteUpdate = true;
+        appState.projects = mergedProjects;
+        if (!appState.projects.some(p => p.id === appState.activeProjectId)) {
+          appState.activeProjectId = appState.projects[0].id;
+        }
+        saveAppState(true);
+        renderApp();
+        isApplyingRemoteUpdate = false;
+      }
+    }
+
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && cloudConfig.url && cloudConfig.key) {
         initSupabaseCloud(false);
@@ -1786,109 +1905,108 @@
             }, { onConflict: 'id' });
 
           if (error) throw error;
+          proj.hasLocalEdits = false;
           setCloudBadge('live');
-        } catch (err) {
-          console.error('Cloud upsert error:', err);
+        } catch (e) {
+          console.error('Cloud upsert error:', e);
           setCloudBadge('error');
         }
       }, 300);
     }
 
-    async function pushAllProjectsToCloud(notify = true) {
+    function handleRealtimePayload(payload) {
+      try {
+        const rec = payload.new;
+        if (!rec || !rec.id || !rec.data) return;
+        if (appState.lockedProjectId && rec.id !== appState.lockedProjectId) return;
+
+        isApplyingRemoteUpdate = true;
+        const idx = appState.projects.findIndex(p => p.id === rec.id);
+        if (idx >= 0) {
+          appState.projects[idx] = rec.data;
+        } else {
+          appState.projects.push(rec.data);
+        }
+        saveAppState(true);
+        renderApp();
+        isApplyingRemoteUpdate = false;
+      } catch (e) {
+        isApplyingRemoteUpdate = false;
+        console.warn('Realtime payload error:', e);
+      }
+    }
+
+    async function pushAllProjectsToCloud(showMsg = false) {
       if (!supabaseClient) {
-        showToast('Please enter your Supabase URL and Anon Key first.');
+        showToast('⚠️ Configure Supabase URL & Key first.');
+        return false;
+      }
+      try {
+        setCloudBadge('syncing');
+        const rows = appState.projects.map(p => {
+          p.updatedAt = new Date().toISOString();
+          p.hasLocalEdits = false;
+          return {
+            id: p.id,
+            name: p.name,
+            data: p,
+            updated_at: p.updatedAt
+          };
+        });
+        const { error } = await supabaseClient.from('reno_projects').upsert(rows, { onConflict: 'id' });
+        if (error) throw error;
+        saveAppState(true);
+        setCloudBadge('live');
+        if (showMsg) showToast('⬆️ All PC changes pushed to Supabase Cloud!');
+        return true;
+      } catch (e) {
+        console.error('Push error:', e);
+        setCloudBadge('error');
+        showToast('❌ Cloud Push failed: ' + (e.message || 'Check SQL table setup'));
+        return false;
+      }
+    }
+
+    async function pullAllProjectsFromCloud(showMsg = false) {
+      if (!supabaseClient) {
+        showToast('⚠️ Configure Supabase URL & Key first.');
         return;
       }
       try {
         setCloudBadge('syncing');
-        const listToPush = appState.lockedProjectId
-          ? appState.projects.filter(p => p.id === appState.lockedProjectId)
-          : appState.projects;
-
-        const rows = listToPush.map(p => ({
-          id: p.id,
-          name: p.name,
-          data: p,
-          updated_at: new Date().toISOString()
-        }));
-        const { error } = await supabaseClient.from('reno_projects').upsert(rows, { onConflict: 'id' });
-        if (error) throw error;
-        setCloudBadge('live');
-        if (notify) showToast(`⬆️ Pushed ${rows.length} project(s) to Supabase Cloud!`);
-      } catch (err) {
-        console.error('Push error:', err);
-        setCloudBadge('error');
-      }
-    }
-
-    async function pullAllProjectsFromCloud(notify = true, seedIfEmpty = false) {
-      if (!supabaseClient) return;
-      try {
-        setCloudBadge('syncing');
-        let query = supabaseClient.from('reno_projects').select('*').order('updated_at', { ascending: false });
+        let query = supabaseClient.from('reno_projects').select('*');
         if (appState.lockedProjectId) {
           query = supabaseClient.from('reno_projects').select('*').eq('id', appState.lockedProjectId);
         }
-
         const { data, error } = await query;
         if (error) throw error;
-
-        if (!data || data.length === 0) {
-          if (seedIfEmpty && !appState.lockedProjectId) {
-            await pushAllProjectsToCloud(false);
-          }
-          setCloudBadge('live');
-          return;
-        }
-
-        isApplyingRemoteUpdate = true;
-        const remoteProjects = data.map(row => row.data).filter(Boolean);
-        if (remoteProjects.length > 0) {
-          appState.projects = remoteProjects;
+        if (Array.isArray(data) && data.length > 0) {
+          isApplyingRemoteUpdate = true;
+          appState.projects = data.map(r => r.data).filter(Boolean);
           if (!appState.projects.some(p => p.id === appState.activeProjectId)) {
             appState.activeProjectId = appState.projects[0].id;
           }
           saveAppState(true);
           renderApp();
+          isApplyingRemoteUpdate = false;
+          setCloudBadge('live');
+          if (showMsg) showToast('⬇️ Pulled latest projects from Supabase Cloud!');
+        } else {
+          setCloudBadge('live');
+          if (showMsg) showToast('ℹ️ Cloud table is empty — pushing local projects now...');
+          await pushAllProjectsToCloud(true);
         }
+      } catch (e) {
         isApplyingRemoteUpdate = false;
-        setCloudBadge('live');
-        if (notify) showToast(`⬇️ Synced ${remoteProjects.length} project(s) from Cloud!`);
-      } catch (err) {
-        isApplyingRemoteUpdate = false;
-        console.error('Pull error:', err);
+        console.error('Pull error:', e);
         setCloudBadge('error');
-      }
-    }
-
-    function handleRealtimePayload(payload) {
-      if (!payload) return;
-      isApplyingRemoteUpdate = true;
-      try {
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          const remoteProj = payload.new && payload.new.data;
-          if (remoteProj && remoteProj.id) {
-            if (appState.lockedProjectId && remoteProj.id !== appState.lockedProjectId) return;
-            const idx = appState.projects.findIndex(p => p.id === remoteProj.id);
-            if (idx > -1) {
-              appState.projects[idx] = remoteProj;
-            } else if (!appState.lockedProjectId) {
-              appState.projects.push(remoteProj);
-            }
-            saveAppState(true);
-            renderApp();
-            showToast(`⚡ Live update synced (${remoteProj.name})`);
-          }
-        }
-      } finally {
-        isApplyingRemoteUpdate = false;
+        showToast('❌ Cloud Pull failed: ' + (e.message || 'Check connection'));
       }
     }
 
     function openCloudModal() {
       document.getElementById('sb-url-input').value = cloudConfig.url || '';
       document.getElementById('sb-key-input').value = cloudConfig.key || '';
-      document.getElementById('cloud-credentials-section').classList.toggle('hidden', !!appState.lockedProjectId);
       document.getElementById('cloud-modal').classList.remove('hidden');
     }
 
@@ -1896,43 +2014,24 @@
       const url = document.getElementById('sb-url-input').value.trim();
       const key = document.getElementById('sb-key-input').value.trim();
       if (!url || !key) {
-        showToast('Please enter both your Supabase Project URL and Anon Public Key.');
+        showToast('⚠️ Please enter both your Supabase Project URL and Anon Key.');
         return;
       }
       cloudConfig.url = url;
       cloudConfig.key = key;
       saveCloudConfig();
+      supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.key);
+      await pushAllProjectsToCloud(false);
       await initSupabaseCloud(true);
-      closeModal('cloud-modal');
     }
 
     function disconnectCloud() {
       cloudConfig = { url: '', key: '' };
       saveCloudConfig();
-      if (realtimeChannel && supabaseClient) {
-        supabaseClient.removeChannel(realtimeChannel);
-      }
       supabaseClient = null;
-      realtimeChannel = null;
       setCloudBadge('local');
       closeModal('cloud-modal');
-      showToast('Disconnected from Cloud. Working in Local Only mode.');
-    }
-
-    function copyTextToClipboard(text, successMsg) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        showToast(successMsg);
-      } catch (e) {
-        showToast('Copy failed — please copy manually.');
-      }
-      document.body.removeChild(ta);
+      showToast('⚪ Disconnected from Cloud. Running in Local Mode.');
     }
 
     function copySupabaseSQLScript() {
@@ -1944,74 +2043,151 @@
 );
 alter table reno_projects enable row level security;
 drop policy if exists "Public collaboration access" on reno_projects;
-create policy "Public collaboration access" on reno_projects
-  for all using (true) with check (true);
+create policy "Public collaboration access" on reno_projects for all using (true) with check (true);
 alter publication supabase_realtime add table reno_projects;`;
-      copyTextToClipboard(sql, '📋 SQL Setup Script copied! Paste into Supabase SQL Editor → Run.');
+      copyTextToClipboard(sql);
+      showToast('📋 SQL Setup Script copied! Paste into Supabase SQL Editor & click Run.');
     }
 
-    function copyShareableMagicLink(targetRole, lockToSingleProject = true) {
-      const proj = getActiveProject();
-      const includeKeys = document.getElementById('magic-include-keys').checked;
-      const urlInput = document.getElementById('sb-url-input').value.trim() || cloudConfig.url;
-      const keyInput = document.getElementById('sb-key-input').value.trim() || cloudConfig.key;
-
-      const base = window.location.origin + window.location.pathname;
-      const params = new URLSearchParams();
-      params.set('project', proj.id);
-      params.set('role', targetRole);
-      if (lockToSingleProject) {
-        params.set('locked', '1');
-      }
-      if (includeKeys && urlInput && keyInput) {
-        params.set('sb_url', urlInput);
-        params.set('sb_key', keyInput);
-      }
-      const fullLink = `${base}?${params.toString()}`;
-      copyTextToClipboard(
-        fullLink,
-        lockToSingleProject
-          ? `🔒 Isolated link for "${proj.name}" copied! Recipient can ONLY see this project.`
-          : '👑 Full Owner Hub Link copied!'
-      );
-    }
-
-    // =========================================================================
-    // 2C. NAVIGATION: PROJECT HUB vs WORKSPACE & ROLE SWITCHER
-    // =========================================================================
-    function goToHub() {
-      if (appState.lockedProjectId) {
-        showToast('🔒 This shared link is locked to a single project.');
-        return;
-      }
-      appState.currentView = 'hub';
-      saveAppState(true);
-      renderApp();
-    }
-
-    function openProjectFromHub(projId) {
-      appState.activeProjectId = projId;
-      appState.currentView = 'workspace';
-      saveAppState(true);
-      renderApp();
-    }
-
-    function setRole(role) {
-      appState.role = role === 'contractor' ? 'contractor' : 'owner';
-      saveAppState(true);
-      renderApp();
-    }
-
-    function saveContractorNote(val, notify = false) {
+    async function copyShareableMagicLink(targetRole = 'contractor', lockSingleProject = true) {
       const proj = getActiveProject();
       if (!proj) return;
-      proj.contractorNote = String(val || '').trim();
-      proj.contractorNoteUpdatedAt = new Date().toLocaleString(appState.lang === 'fr' ? 'fr-FR' : 'en-GB', {
-        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-      });
-      saveAppState();
-      renderApp();
-      if (notify) showToast('📝 Site note saved & synced!');
+
+      // Always push latest local edits to Supabase first so the phone sees the exact PC version!
+      if (supabaseClient) {
+        await pushAllProjectsToCloud(false);
+      }
+
+      const urlObj = new URL(window.location.href.split('?')[0]);
+      urlObj.searchParams.set('project', proj.id);
+      urlObj.searchParams.set('role', targetRole);
+      if (lockSingleProject) {
+        urlObj.searchParams.set('locked', '1');
+      }
+      const includeKeys = document.getElementById('magic-include-keys')?.checked;
+      if (includeKeys && cloudConfig.url && cloudConfig.key) {
+        urlObj.searchParams.set('sb_url', cloudConfig.url);
+        urlObj.searchParams.set('sb_key', cloudConfig.key);
+      }
+
+      copyTextToClipboard(urlObj.toString());
+      showToast(lockSingleProject
+        ? '🔒👷 Pushed PC edits & copied Locked Single-Project Link!'
+        : '👑📱 Pushed PC edits & copied Owner Link for your phone!');
+    }
+
+    function copyTextToClipboard(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    // =========================================================================
+    // 3. SINGLE-PROJECT & FULL-BACKUP JSON SAVE / LOAD
+    // =========================================================================
+    function exportSingleProjectJSON() {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const safeName = (proj.name || 'project').replace(/[^a-z0-9_-]/gi, '_');
+      const payload = {
+        _type: 'renovation_studio_single_project',
+        version: '3.0',
+        exportedAt: new Date().toISOString(),
+        project: proj
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerDownload(blob, `${safeName}.reno.json`);
+      showToast(`💾 Saved "${proj.name}" as a portable .json file!`);
+    }
+
+    function handleImportSingleProjectJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          let incomingProj = null;
+
+          if (parsed && parsed._type === 'renovation_studio_single_project' && parsed.project) {
+            incomingProj = parsed.project;
+          } else if (parsed && parsed.id && Array.isArray(parsed.segments)) {
+            incomingProj = parsed;
+          } else if (parsed && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+            // If user selected a full backup file, import all projects from it seamlessly
+            parsed.projects.forEach(p => {
+              p.updatedAt = new Date().toISOString();
+              p.hasLocalEdits = true;
+              const existingIdx = appState.projects.findIndex(x => x.id === p.id);
+              if (existingIdx >= 0) {
+                appState.projects[existingIdx] = p;
+              } else {
+                appState.projects.push(p);
+              }
+            });
+            appState.activeProjectId = parsed.activeProjectId || parsed.projects[0].id;
+            appState.currentView = 'workspace';
+            saveAppState();
+            renderApp();
+            if (supabaseClient) await pushAllProjectsToCloud(true);
+            showToast(`📂 Loaded ${parsed.projects.length} project(s) from backup!`);
+            event.target.value = '';
+            return;
+          }
+
+          if (!incomingProj || !Array.isArray(incomingProj.segments)) {
+            showToast('❌ Invalid project JSON file.');
+            return;
+          }
+
+          incomingProj.updatedAt = new Date().toISOString();
+          incomingProj.hasLocalEdits = true;
+
+          const existingIdx = appState.projects.findIndex(p => p.id === incomingProj.id);
+          if (existingIdx >= 0) {
+            appState.projects[existingIdx] = incomingProj;
+          } else {
+            appState.projects.push(incomingProj);
+          }
+
+          appState.activeProjectId = incomingProj.id;
+          appState.currentView = 'workspace';
+          saveAppState();
+          renderApp();
+          if (supabaseClient) {
+            await pushAllProjectsToCloud(false);
+          }
+          showToast(`📂 Project "${incomingProj.name}" loaded & synced!`);
+        } catch (err) {
+          console.error('Import error:', err);
+          showToast('❌ Could not parse JSON file.');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function exportAllProjectsJSON() {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      triggerDownload(blob, `Renovation_Studio_All_Projects_${new Date().toISOString().slice(0, 10)}.json`);
+      showToast('💾 Downloaded full multi-project backup (.json)!');
+    }
+
+    function handleImportJSON(event) {
+      handleImportSingleProjectJSON(event);
+    }
+
+    // =========================================================================
+    // 4. CORE HELPERS, CALCULATIONS & UI RENDERING
+    // =========================================================================
+    function t(key) {
+      const dict = I18N[appState.lang] || I18N.en;
+      return dict[key] || I18N.en[key] || key;
     }
 
     function getActiveProject() {
@@ -2022,35 +2198,32 @@ alter publication supabase_realtime add table reno_projects;`;
       return appState.projects.find(p => p.id === appState.activeProjectId) || appState.projects[0];
     }
 
-    function t(key) {
-      const dict = I18N[appState.lang] || I18N.en;
-      return dict[key] || I18N.en[key] || key;
-    }
-
-    // =========================================================================
-    // 3. BUDGET & PROCUREMENT MATH ENGINE
-    // =========================================================================
-    function formatEUR(val) {
+    function fmtEUR(val) {
       const num = Number(val || 0);
       if (appState.lang === 'fr') {
-        const parts = num.toFixed(2).split('.');
-        return '€' + parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + parts[1];
+        return '€' + num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       return '€' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function calculateProjectMetrics(proj) {
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function computeProjectMetrics(proj) {
       let furnitureTTC = 0, furnitureHT = 0;
       let materialsTTC = 0, materialsHT = 0;
-      let countToBuy = 0, countOrdered = 0, countDelivered = 0;
-      let procuredValueTTC = 0, totalItemsValueTTC = 0;
+      let countToBuy = 0, countOrdered = 0, countDelivered = 0, totalItems = 0;
 
-      proj.segments.forEach(seg => {
-        seg.items.forEach(item => {
+      (proj.segments || []).forEach(seg => {
+        (seg.items || []).forEach(item => {
           const lineTTC = (Number(item.qty) || 0) * (Number(item.priceTTC) || 0);
           const vatRate = Number(item.vat ?? 20);
           const lineHT = lineTTC / (1 + vatRate / 100);
-
           if (seg.kind === 'furniture') {
             furnitureTTC += lineTTC;
             furnitureHT += lineHT;
@@ -2058,35 +2231,23 @@ alter publication supabase_realtime add table reno_projects;`;
             materialsTTC += lineTTC;
             materialsHT += lineHT;
           }
-
-          totalItemsValueTTC += lineTTC;
-          if (item.status === 'delivered') {
-            countDelivered++;
-            procuredValueTTC += lineTTC;
-          } else if (item.status === 'ordered') {
-            countOrdered++;
-            procuredValueTTC += lineTTC;
-          } else {
-            countToBuy++;
-          }
+          totalItems++;
+          if (item.status === 'delivered') countDelivered++;
+          else if (item.status === 'ordered') countOrdered++;
+          else countToBuy++;
         });
       });
 
-      let proDays = 0, diyDays = 0, cureDays = 0;
-      let laborTasksHT = 0, laborTasksTTC = 0, diySavedTTC = 0;
-
-      proj.labor.forEach(phase => {
-        const d = Number(phase.days) || 0;
-        const c = Number(phase.cureDays) || 0;
-        const ht = Number(phase.costHT) || 0;
-        const vat = Number(phase.vat ?? 10);
+      let proDays = 0, diyDays = 0, proLaborHT = 0, proLaborTTC = 0, diySavedTTC = 0;
+      (proj.labor || []).forEach(ph => {
+        const d = Number(ph.days) || 0;
+        const ht = Number(ph.costHT) || 0;
+        const vat = Number(ph.vat ?? 10);
         const ttc = ht * (1 + vat / 100);
-        cureDays += c;
-
-        if (phase.mode === 'pro') {
+        if (ph.mode === 'pro') {
           proDays += d;
-          laborTasksHT += ht;
-          laborTasksTTC += ttc;
+          proLaborHT += ht;
+          proLaborTTC += ttc;
         } else {
           diyDays += d;
           diySavedTTC += ttc;
@@ -2096,104 +2257,150 @@ alter publication supabase_realtime add table reno_projects;`;
       const travelDailyHT = Number(proj.travelDailyHT) || 0;
       const travelHT = proDays * travelDailyHT;
       const travelTTC = travelHT * 1.10;
-      const savedTravelTTC = (diyDays * travelDailyHT) * 1.10;
+      const savedTravelTTC = diyDays * travelDailyHT * 1.10;
 
-      const totalLaborHT = laborTasksHT + travelHT;
-      const totalLaborTTC = laborTasksTTC + travelTTC;
+      const totalLaborHT = proLaborHT + travelHT;
+      const totalLaborTTC = proLaborTTC + travelTTC;
       const totalSavedTTC = diySavedTTC + savedTravelTTC;
       const grandTotalTTC = furnitureTTC + materialsTTC + totalLaborTTC;
 
-      const procuredPct = totalItemsValueTTC > 0 ? Math.round((procuredValueTTC / totalItemsValueTTC) * 100) : 0;
-      const calMin = Math.ceil(proDays + diyDays + cureDays);
-      const calMax = calMin + 1;
+      const totalWorkDays = proDays + diyDays;
+      const minCal = Math.ceil(totalWorkDays + 2);
+      const maxCal = Math.ceil(totalWorkDays + 3);
+      const procuredPct = totalItems > 0 ? Math.round(((countOrdered + countDelivered) / totalItems) * 100) : 0;
 
       return {
         furnitureTTC, furnitureHT,
         materialsTTC, materialsHT,
-        totalLaborHT, totalLaborTTC,
+        proDays, diyDays,
         travelHT, travelTTC,
+        totalLaborHT, totalLaborTTC,
         totalSavedTTC, grandTotalTTC,
-        proDays, diyDays, cureDays, calMin, calMax,
-        countToBuy, countOrdered, countDelivered, procuredPct
+        countToBuy, countOrdered, countDelivered, totalItems, procuredPct,
+        minCal, maxCal
       };
     }
 
-    // =========================================================================
-    // 4. RENDERING ENGINE (HUB + WORKSPACE + CUSTOM PLANS)
-    // =========================================================================
-    function renderApp() {
-      const proj = getActiveProject();
-      const m = calculateProjectMetrics(proj);
-      const isLocked = !!appState.lockedProjectId;
-      const isContractor = appState.role === 'contractor';
+    function setLanguage(lang) {
+      appState.lang = lang === 'fr' ? 'fr' : 'en';
+      saveAppState(true);
+      renderApp();
+    }
 
+    function setRole(role) {
+      if (appState.lockedProjectId && appState.role === 'contractor' && role === 'owner') {
+        showToast('🔒 This link is locked to Contractor Mode.');
+        return;
+      }
+      appState.role = role === 'contractor' ? 'contractor' : 'owner';
+      saveAppState(true);
+      renderApp();
+    }
+
+    function goToHub() {
+      if (appState.lockedProjectId) {
+        showToast('🔒 Single-project link active.');
+        return;
+      }
+      appState.currentView = 'hub';
+      saveAppState(true);
+      renderApp();
+    }
+
+    function switchProject(projId) {
+      if (appState.lockedProjectId && projId !== appState.lockedProjectId) return;
+      appState.activeProjectId = projId;
+      appState.currentView = 'workspace';
+      saveAppState(true);
+      renderApp();
+    }
+
+    function renderApp() {
+      // 1. Translate all static data-i18n elements
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         el.textContent = t(key);
       });
 
-      document.getElementById('lang-btn-en').className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'en' ? 'bg-brand-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`;
-      document.getElementById('lang-btn-fr').className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'fr' ? 'bg-brand-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`;
+      // 2. Language buttons
+      const btnEn = document.getElementById('lang-btn-en');
+      const btnFr = document.getElementById('lang-btn-fr');
+      if (btnEn && btnFr) {
+        btnEn.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'en' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
+        btnFr.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'fr' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
+      }
 
-      document.getElementById('role-btn-owner').className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${!isContractor ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`;
-      document.getElementById('role-btn-contractor').className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${isContractor ? 'bg-amber-500 text-slate-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`;
+      // 3. Role buttons
+      const btnOwner = document.getElementById('role-btn-owner');
+      const btnContractor = document.getElementById('role-btn-contractor');
+      if (btnOwner && btnContractor) {
+        btnOwner.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.role === 'owner' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
+        btnContractor.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.role === 'contractor' ? 'bg-amber-400 text-slate-950 shadow-2xs' : 'text-slate-600'}`;
+      }
 
+      // 4. Single-project lock visibility
+      const isLocked = Boolean(appState.lockedProjectId);
       document.getElementById('badge-locked-project').classList.toggle('hidden', !isLocked);
       document.getElementById('btn-nav-hub').classList.toggle('hidden', isLocked);
       document.getElementById('owner-project-controls').classList.toggle('hidden', isLocked);
       document.getElementById('locked-project-header').classList.toggle('hidden', !isLocked);
-      document.getElementById('locked-project-title').textContent = L(proj, 'name');
 
-      const showHub = !isLocked && appState.currentView === 'hub';
-      document.getElementById('hub-view').classList.toggle('hidden', !showHub);
-      document.getElementById('workspace-view').classList.toggle('hidden', showHub);
-      document.getElementById('workspace-subheader').classList.toggle('hidden', showHub);
+      // 5. Switch between Hub View and Workspace View
+      const hubView = document.getElementById('hub-view');
+      const wsView = document.getElementById('workspace-view');
+      const wsSubheader = document.getElementById('workspace-subheader');
 
-      if (showHub) {
-        renderHubView();
+      if (!isLocked && appState.currentView === 'hub') {
+        hubView.classList.remove('hidden');
+        wsView.classList.add('hidden');
+        wsSubheader.classList.add('hidden');
+        renderHubProjectsGrid();
         return;
       }
 
-      document.getElementById('btn-preset-hybrid').classList.toggle('hidden', isContractor);
-      document.getElementById('kpi-diy-saved-pill').classList.toggle('hidden', isContractor);
+      hubView.classList.add('hidden');
+      wsView.classList.remove('hidden');
+      wsSubheader.classList.remove('hidden');
 
-      const siteBanner = document.getElementById('contractor-site-banner');
+      const proj = getActiveProject();
+      if (!proj) return;
+
+      // Populate Project Dropdown
+      const sel = document.getElementById('project-select');
+      if (sel) {
+        sel.innerHTML = appState.projects.map(p =>
+          `<option value="${escapeHTML(p.id)}" ${p.id === proj.id ? 'selected' : ''}>${escapeHTML(L(p, 'name'))}</option>`
+        ).join('');
+      }
+      const lockedTitle = document.getElementById('locked-project-title');
+      if (lockedTitle) lockedTitle.textContent = L(proj, 'name');
+
+      // Contractor note banner
+      const noteInput = document.getElementById('contractor-note-input');
+      if (noteInput) noteInput.value = L(proj, 'contractorNote') || '';
+      const noteTime = document.getElementById('site-note-timestamp');
+      if (noteTime) noteTime.textContent = proj.contractorNoteUpdatedAt ? `(${L(proj, 'contractorNoteUpdatedAt')})` : '';
       const rolePill = document.getElementById('role-active-pill');
-      siteBanner.className = isContractor
-        ? 'bg-amber-50/90 rounded-2xl p-4 border-2 border-amber-300 shadow-xs transition'
-        : 'bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs transition';
-      rolePill.textContent = isContractor
-        ? (appState.lang === 'fr' ? 'Mode Artisan Actif' : 'Contractor Mode Active')
-        : (appState.lang === 'fr' ? 'Vue Maître d’Ouvrage' : 'Owner View');
-      rolePill.className = isContractor
-        ? 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-amber-400 text-slate-950'
-        : 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-700';
+      if (rolePill) {
+        rolePill.textContent = appState.role === 'contractor'
+          ? (appState.lang === 'fr' ? 'Mode Artisan' : 'Contractor Mode')
+          : (appState.lang === 'fr' ? 'Mode Propriétaire' : 'Owner View');
+      }
 
-      const projSelect = document.getElementById('project-select');
-      projSelect.innerHTML = appState.projects.map(p =>
-        `<option value="${escapeHTML(p.id)}" ${p.id === proj.id ? 'selected' : ''}>${escapeHTML(L(p, 'name'))}</option>`
-      ).join('');
-
-      document.getElementById('contractor-note-input').value = L(proj, 'contractorNote');
-      document.getElementById('site-note-timestamp').textContent = proj.contractorNoteUpdatedAt
-        ? `(${L(proj, 'contractorNoteUpdatedAt')})`
-        : '';
-
-      document.getElementById('kpi-furniture-ttc').textContent = formatEUR(m.furnitureTTC);
-      document.getElementById('kpi-furniture-ht').textContent = `${formatEUR(m.furnitureHT)} HT`;
-      document.getElementById('kpi-materials-ttc').textContent = formatEUR(m.materialsTTC);
-      document.getElementById('kpi-materials-ht').textContent = `${formatEUR(m.materialsHT)} HT`;
-      document.getElementById('kpi-labor-ttc').textContent = formatEUR(m.totalLaborTTC);
-      document.getElementById('kpi-labor-ht').textContent = `${formatEUR(m.totalLaborHT)} HT • ${m.proDays.toFixed(1)} ${appState.lang === 'fr' ? 'j Artisan' : 'd Pro'}`;
-      document.getElementById('kpi-grand-total').textContent = formatEUR(m.grandTotalTTC);
+      // KPIs
+      const m = computeProjectMetrics(proj);
+      document.getElementById('kpi-furniture-ttc').textContent = fmtEUR(m.furnitureTTC);
+      document.getElementById('kpi-furniture-ht').textContent = `${fmtEUR(m.furnitureHT)} HT`;
+      document.getElementById('kpi-materials-ttc').textContent = fmtEUR(m.materialsTTC);
+      document.getElementById('kpi-materials-ht').textContent = `${fmtEUR(m.materialsHT)} HT`;
+      document.getElementById('kpi-labor-ttc').textContent = fmtEUR(m.totalLaborTTC);
+      document.getElementById('kpi-labor-ht').textContent = `${fmtEUR(m.totalLaborHT)} HT • ${m.proDays.toFixed(1)} ${t('proDaysUnit')}`;
+      document.getElementById('kpi-grand-total').textContent = fmtEUR(m.grandTotalTTC);
 
       const savedPill = document.getElementById('kpi-diy-saved-pill');
-      if (m.totalSavedTTC > 0) {
-        savedPill.textContent = `${appState.lang === 'fr' ? 'Économie DIY' : 'DIY Saved'}: ${formatEUR(m.totalSavedTTC)}`;
-        savedPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-400 text-slate-950';
-      } else {
-        savedPill.textContent = appState.lang === 'fr' ? '100% Artisan' : 'Full Pro';
-        savedPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700';
+      if (savedPill) {
+        savedPill.textContent = `${appState.lang === 'fr' ? 'Économie' : 'Saved'}: ${fmtEUR(m.totalSavedTTC)}`;
+        savedPill.classList.toggle('hidden', appState.role === 'contractor');
       }
 
       document.getElementById('kpi-procurement-bar').style.width = `${m.procuredPct}%`;
@@ -2201,526 +2408,237 @@ alter publication supabase_realtime add table reno_projects;`;
         ? `${m.procuredPct}% Commandé / Livré`
         : `${m.procuredPct}% Ordered / Delivered`;
 
-      const dUnit = appState.lang === 'fr' ? 'j' : 'd';
-      const proLbl = appState.lang === 'fr' ? 'Artisan' : 'Pro';
-      document.getElementById('kpi-workdays').textContent = `${m.proDays.toFixed(1)}${dUnit} ${proLbl} ${m.diyDays > 0 ? `+ ${m.diyDays.toFixed(1)}${dUnit} DIY` : ''} • ~${m.calMin}–${m.calMax}${dUnit} cal.`;
+      document.getElementById('kpi-workdays').textContent = appState.lang === 'fr'
+        ? `${m.proDays.toFixed(1)} j Pro • ~${m.minCal}–${m.maxCal} j cal.`
+        : `${m.proDays.toFixed(1)} d Pro • ~${m.minCal}–${m.maxCal} d cal.`;
+
       document.getElementById('status-count-tobuy').textContent = `${m.countToBuy} ${appState.lang === 'fr' ? 'À acheter' : 'To Buy'}`;
       document.getElementById('status-count-ordered').textContent = `${m.countOrdered} ${appState.lang === 'fr' ? 'Commandé' : 'Ordered'}`;
       document.getElementById('status-count-delivered').textContent = `${m.countDelivered} ${appState.lang === 'fr' ? 'Livré' : 'Delivered'}`;
 
+      // Geometry & Plans Module
+      const geoCheckbox = document.getElementById('toggle-geometry-module');
+      if (geoCheckbox) geoCheckbox.checked = Boolean(proj.showGeometry);
+      const geoSec = document.getElementById('geometry-module-section');
+      if (geoSec) geoSec.classList.toggle('hidden', !proj.showGeometry);
+
+      const geoBody = document.getElementById('geometry-module-body');
+      if (geoBody) geoBody.classList.toggle('hidden', Boolean(proj.geoCollapsed));
+
       renderGeometryAndPlans(proj);
-
-      ['all', 'to_buy', 'ordered', 'delivered'].forEach(st => {
-        const btn = document.getElementById(`filter-btn-${st}`);
-        if (!btn) return;
-        const active = appState.statusFilter === st;
-        btn.className = `px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${active ? 'bg-slate-900 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-      });
-
+      renderFilterButtons();
       renderSegments(proj);
-      renderLabor(proj, m);
+      renderLaborSection(proj, m);
       renderGantt(proj);
     }
 
-    function renderHubView() {
+    function renderHubProjectsGrid() {
       const grid = document.getElementById('hub-projects-grid');
+      if (!grid) return;
       grid.innerHTML = appState.projects.map(p => {
-        const m = calculateProjectMetrics(p);
+        const m = computeProjectMetrics(p);
         const isCurrent = p.id === appState.activeProjectId;
-        const itemCount = p.segments.reduce((acc, s) => acc + s.items.length, 0);
-        const dStr = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString(appState.lang === 'fr' ? 'fr-FR' : 'en-GB', { day: '2-digit', month: 'short' }) : '';
-
         return `
-          <div class="bg-white rounded-2xl p-5 border-2 ${isCurrent ? 'border-brand-500' : 'border-slate-200'} shadow-2xs hover:shadow-md transition flex flex-col justify-between gap-4">
+          <div class="bg-white rounded-2xl p-5 border ${isCurrent ? 'border-brand-500 ring-2 ring-brand-100' : 'border-slate-200'} shadow-2xs flex flex-col justify-between gap-4">
             <div>
-              <div class="flex items-center justify-between gap-2 mb-2">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isCurrent ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-slate-100 text-slate-600'}">
-                  ${isCurrent ? (appState.lang === 'fr' ? '● Projet Actif' : '● Active Project') : (appState.lang === 'fr' ? 'Projet Sauvegardé' : 'Saved Project')}
-                </span>
-                <span class="text-[11px] text-slate-400">${escapeHTML(dStr)}</span>
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-sm sm:text-base font-extrabold text-slate-900">${escapeHTML(L(p, 'name'))}</h4>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 shrink-0">${m.totalItems} items</span>
               </div>
-              <h4 class="text-base font-extrabold text-slate-900 leading-snug">${escapeHTML(L(p, 'name'))}</h4>
-              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHTML(L(p, 'contractorNote') || 'No site note yet.')}</p>
-
-              <div class="grid grid-cols-2 gap-2 mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHTML(L(p, 'contractorNote') || '—')}</p>
+              <div class="grid grid-cols-2 gap-2 mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-slate-400 block">${escapeHTML(t('kpiGrandTotal'))}</span>
-                  <span class="text-base font-extrabold text-slate-900">${formatEUR(m.grandTotalTTC)}</span>
+                  <span class="text-[10px] uppercase text-slate-400 font-bold block">${t('kpiGrandTotal')}</span>
+                  <span class="font-extrabold text-slate-900">${fmtEUR(m.grandTotalTTC)}</span>
                 </div>
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-slate-400 block">${escapeHTML(t('kpiTimelineStatus'))}</span>
-                  <span class="text-xs font-bold text-slate-800">${m.proDays.toFixed(1)}d Pro • ${itemCount} items</span>
+                  <span class="text-[10px] uppercase text-slate-400 font-bold block">${t('thDays')}</span>
+                  <span class="font-extrabold text-slate-900">${m.proDays.toFixed(1)} d Pro</span>
                 </div>
               </div>
             </div>
-
             <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-              <button type="button" onclick="openProjectFromHub('${p.id}')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-extrabold transition cursor-pointer">
-                ${appState.lang === 'fr' ? 'Ouvrir le Projet →' : 'Open Project →'}
+              <button type="button" onclick="switchProject('${escapeHTML(p.id)}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition cursor-pointer">
+                ${appState.lang === 'fr' ? 'Ouvrir Projet →' : 'Open Project →'}
               </button>
-              <button type="button" onclick="duplicateProjectById('${p.id}')" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer" title="Duplicate Option">
-                ⧉
-              </button>
-              <button type="button" onclick="shareSingleProjectFromHub('${p.id}')" class="py-2 px-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition cursor-pointer" title="Copy Locked Single-Project Link for Contractor/Client">
-                🔒🔗
-              </button>
-              ${appState.projects.length > 1 ? `
-                <button type="button" onclick="deleteProjectById('${p.id}')" class="py-2 px-2.5 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold transition cursor-pointer" title="Delete Project">
-                  🗑
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="exportProjectByIdJSON('${escapeHTML(p.id)}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer" title="Save this project as .json">
+                  💾 .json
                 </button>
-              ` : ''}
+                <button type="button" onclick="shareLockedLinkById('${escapeHTML(p.id)}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 cursor-pointer" title="Copy Locked Contractor Link">
+                  🔒🔗
+                </button>
+                ${appState.projects.length > 1 ? `
+                  <button type="button" onclick="deleteProjectById('${escapeHTML(p.id)}')" class="px-2 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer" title="Delete">
+                    ✕
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
+    function exportProjectByIdJSON(projId) {
+      const prev = appState.activeProjectId;
+      appState.activeProjectId = projId;
+      exportSingleProjectJSON();
+      appState.activeProjectId = prev;
+    }
+
+    async function shareLockedLinkById(projId) {
+      appState.activeProjectId = projId;
+      await copyShareableMagicLink('contractor', true);
+    }
+
+    function deleteProjectById(projId) {
+      if (appState.projects.length <= 1) return;
+      const target = appState.projects.find(p => p.id === projId);
+      if (!target) return;
+      openConfirmModal(
+        appState.lang === 'fr' ? 'Supprimer ce projet ?' : 'Delete this project?',
+        `${L(target, 'name')}`,
+        async () => {
+          appState.projects = appState.projects.filter(p => p.id !== projId);
+          if (appState.activeProjectId === projId) {
+            appState.activeProjectId = appState.projects[0].id;
+          }
+          saveAppState(true);
+          if (supabaseClient) {
+            try { await supabaseClient.from('reno_projects').delete().eq('id', projId); } catch (e) {}
+          }
+          renderApp();
+          showToast('🗑️ Project removed.');
+        }
+      );
+    }
+
     function renderGeometryAndPlans(proj) {
-      const geoCheckbox = document.getElementById('toggle-geometry-module');
-      geoCheckbox.checked = !!proj.showGeometry;
-      const geoSection = document.getElementById('geometry-module-section');
-      const geoBody = document.getElementById('geometry-module-body');
+      const netInput = document.getElementById('calc-net-area');
+      const boxInput = document.getElementById('calc-box-coverage');
+      const grossEl = document.getElementById('calc-gross-area');
+      const slider = document.getElementById('tile-waste-slider');
+      const summary = document.getElementById('tile-waste-summary');
 
-      if (!proj.showGeometry) {
-        geoSection.classList.add('hidden');
-        return;
+      const net = Number(proj.netAreaM2) || 10.72;
+      const boxCov = Number(proj.boxCoverageM2) || 1.62;
+      const waste = Number(proj.wastePct) ?? 15;
+      const gross = net * (1 + waste / 100);
+      const boxes = Math.ceil(gross / boxCov);
+
+      if (netInput) netInput.value = net;
+      if (boxInput) boxInput.value = boxCov;
+      if (grossEl) grossEl.textContent = `${gross.toFixed(2)} m²`;
+      if (slider) slider.value = waste;
+
+      // Find linked tile item price
+      let tileBoxPrice = 40.34;
+      (proj.segments || []).forEach(s => {
+        (s.items || []).forEach(i => {
+          if (i.isTileItem) tileBoxPrice = Number(i.priceTTC) || 40.34;
+        });
+      });
+
+      if (summary) {
+        summary.textContent = `${waste}% → ${boxes} ${LUnit('boxes')} (${(boxes * boxCov).toFixed(2)} m² • ${fmtEUR(boxes * tileBoxPrice)})`;
       }
-      geoSection.classList.remove('hidden');
-      geoBody.classList.toggle('hidden', !!proj.geoCollapsed);
-      document.getElementById('btn-collapse-geo').textContent = proj.geoCollapsed ? t('expandBtn') : t('collapseBtn');
 
-      const plansGallery = document.getElementById('custom-plans-gallery');
-      const plansGrid = document.getElementById('custom-plans-grid');
-      const plans = Array.isArray(proj.planImages) ? proj.planImages : [];
-      if (plans.length > 0) {
-        plansGallery.classList.remove('hidden');
-        plansGrid.innerHTML = plans.map((pl, idx) => `
-          <div class="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden flex flex-col justify-between">
-            <a href="${escapeHTML(pl.url)}" target="_blank" rel="noopener noreferrer" class="block h-44 bg-white overflow-hidden">
-              <img src="${escapeHTML(pl.url)}" alt="${escapeHTML(pl.title || 'Plan')}" class="w-full h-full object-contain hover:scale-105 transition" />
-            </a>
-            <div class="p-2.5 flex items-center justify-between gap-2 bg-white border-t border-slate-200">
-              <span class="text-xs font-bold text-slate-800 truncate">${escapeHTML(pl.title || `Plan #${idx + 1}`)}</span>
-              <button type="button" onclick="removePlanImage(${idx})" class="text-xs text-rose-600 hover:underline cursor-pointer no-print">✕</button>
+      // Custom plans gallery
+      const gal = document.getElementById('custom-plans-gallery');
+      const grid = document.getElementById('custom-plans-grid');
+      if (gal && grid) {
+        const imgs = proj.planImages || [];
+        gal.classList.toggle('hidden', imgs.length === 0);
+        grid.innerHTML = imgs.map((im, idx) => `
+          <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
+            <img src="${escapeHTML(im.url)}" alt="${escapeHTML(im.title || 'Plan')}" class="w-full h-44 object-contain bg-white" />
+            <div class="px-3 py-1.5 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-700 truncate">${escapeHTML(im.title || ('Plan ' + (idx + 1)))}</span>
+              <button type="button" onclick="removePlanImage(${idx})" class="text-rose-600 hover:underline font-semibold cursor-pointer">✕</button>
             </div>
           </div>
         `).join('');
-      } else {
-        plansGallery.classList.add('hidden');
       }
-
-      const showBathSvg = !!proj.useDefaultBathSvg;
-      document.getElementById('default-bath-svg-box').classList.toggle('hidden', !showBathSvg);
-      document.getElementById('surface-calc-col').className = showBathSvg ? 'lg:col-span-7 space-y-3.5' : 'lg:col-span-12 space-y-3.5';
-
-      const netArea = Number(proj.netAreaM2 || 10.72);
-      const boxCov = Number(proj.boxCoverageM2 || 1.62);
-      const wastePct = Number(proj.wastePct || 15);
-      const grossArea = netArea * (1 + wastePct / 100);
-      const boxes = Math.ceil(grossArea / boxCov);
-      const covered = (boxes * boxCov).toFixed(2);
-
-      document.getElementById('calc-net-area').value = netArea;
-      document.getElementById('calc-box-coverage').value = boxCov;
-      document.getElementById('calc-gross-area').textContent = `${grossArea.toFixed(2)} m²`;
-      document.getElementById('tile-waste-slider').value = wastePct;
-
-      let tileUnitPrice = 40.34;
-      proj.segments.forEach(s => s.items.forEach(i => {
-        if (i.isTileItem || i.id === 'm1') tileUnitPrice = Number(i.priceTTC || 40.34);
-      }));
-      const cost = formatEUR(boxes * tileUnitPrice);
-      const boxWord = appState.lang === 'fr' ? 'boîtes' : 'boxes';
-      document.getElementById('tile-waste-summary').textContent = `${wastePct}% → ${boxes} ${boxWord} (${covered} m² • ${cost})`;
-    }
-
-    function handlePlanImageUpload(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const maxDim = 1100;
-          let w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
-            else { w = Math.round(w * (maxDim / h)); h = maxDim; }
-          }
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-
-          const proj = getActiveProject();
-          if (!Array.isArray(proj.planImages)) proj.planImages = [];
-          proj.planImages.push({ title: file.name.replace(/\.[^.]+$/, ''), url: dataUrl });
-          proj.showGeometry = true;
-          proj.geoCollapsed = false;
-          saveAppState();
-          renderApp();
-          showToast('📷 Floor plan / visual added to project & synced!');
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    }
-
-    function promptPlanImageUrl() {
-      const url = window.prompt(appState.lang === 'fr' ? 'Collez l’URL de l’image du plan ou rendu 3D :' : 'Paste Floor Plan or 3D Render Image URL:');
-      if (!url || !url.trim()) return;
-      const proj = getActiveProject();
-      if (!Array.isArray(proj.planImages)) proj.planImages = [];
-      proj.planImages.push({ title: `Plan #${proj.planImages.length + 1}`, url: url.trim() });
-      proj.showGeometry = true;
-      proj.geoCollapsed = false;
-      saveAppState();
-      renderApp();
-      showToast('🔗 Plan image URL added!');
-    }
-
-    function removePlanImage(idx) {
-      const proj = getActiveProject();
-      if (!Array.isArray(proj.planImages)) return;
-      proj.planImages.splice(idx, 1);
-      saveAppState();
-      renderApp();
     }
 
     function updateSurfaceCalcParams() {
       const proj = getActiveProject();
-      proj.netAreaM2 = Math.max(0.5, parseFloat(document.getElementById('calc-net-area').value) || 10);
-      proj.boxCoverageM2 = Math.max(0.1, parseFloat(document.getElementById('calc-box-coverage').value) || 1.5);
-      handleTileWasteChange(proj.wastePct || 15);
+      if (!proj) return;
+      proj.netAreaM2 = Math.max(0.1, parseFloat(document.getElementById('calc-net-area').value) || 10.72);
+      proj.boxCoverageM2 = Math.max(0.1, parseFloat(document.getElementById('calc-box-coverage').value) || 1.62);
+      syncTileBoxesFromCalc(proj);
+      saveAppState();
+      renderApp();
     }
 
-    function getStatusBadge(status) {
-      if (status === 'delivered') {
-        return { label: t('status_delivered'), cls: 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' };
-      }
-      if (status === 'ordered') {
-        return { label: t('status_ordered'), cls: 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100' };
-      }
-      return { label: t('status_to_buy'), cls: 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' };
+    function handleTileWasteChange(val) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      proj.wastePct = parseInt(val, 10) || 15;
+      syncTileBoxesFromCalc(proj);
+      saveAppState();
+      renderApp();
     }
 
-    function renderSegments(proj) {
-      const container = document.getElementById('segments-container');
-      container.innerHTML = proj.segments.map((seg, sIdx) => {
-        const segTTC = seg.items.reduce((acc, i) => acc + (Number(i.qty) || 0) * (Number(i.priceTTC) || 0), 0);
-        const segHT = seg.items.reduce((acc, i) => {
-          const ttc = (Number(i.qty) || 0) * (Number(i.priceTTC) || 0);
-          return acc + ttc / (1 + (Number(i.vat ?? 20) / 100));
-        }, 0);
-
-        const filteredItems = seg.items.filter(item =>
-          appState.statusFilter === 'all' ? true : item.status === appState.statusFilter
-        );
-
-        const headerBg = seg.kind === 'furniture' ? 'bg-sky-50/70' : 'bg-amber-50/70';
-        const badgeBg = seg.kind === 'furniture' ? 'bg-sky-600' : 'bg-amber-600';
-
-        const itemsHTML = filteredItems.length === 0
-          ? `<div class="col-span-full py-6 text-center text-xs text-slate-400">${escapeHTML(t('noItemsFilter'))}</div>`
-          : filteredItems.map(item => {
-              const iconMeta = CATEGORY_ICONS[item.icon] || CATEGORY_ICONS.box;
-              const statusMeta = getStatusBadge(item.status);
-              const lineTTC = (Number(item.qty) || 0) * (Number(item.priceTTC) || 0);
-              const vatRate = Number(item.vat ?? 20);
-              const lineHT = lineTTC / (1 + vatRate / 100);
-
-              const thumbHTML = item.img && item.img.trim() !== ''
-                ? `<div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shrink-0 bg-slate-50">
-                     <img src="${escapeHTML(item.img)}" alt="" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\\'flex w-full h-full items-center justify-center text-xl\\'>${iconMeta.emoji}</span>';" />
-                   </div>`
-                : `<div class="w-12 h-12 rounded-xl border ${iconMeta.bg} flex items-center justify-center text-xl shrink-0">${iconMeta.emoji}</div>`;
-
-              return `
-                <div class="rounded-2xl border border-slate-200/90 bg-white hover:border-brand-300 transition p-3.5 flex flex-col justify-between gap-3 shadow-2xs">
-                  <div class="flex items-start gap-3">
-                    ${thumbHTML}
-                    <div class="flex-1 min-w-0">
-                      <div class="flex flex-wrap items-center justify-between gap-1.5 mb-1">
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                          ${escapeHTML(item.store || 'Store')}
-                        </span>
-                        <div class="flex items-center gap-1">
-                          <button type="button" onclick="cycleItemStatus('${seg.id}', '${item.id}')" title="Tap to cycle status: To Buy → Ordered → Delivered" class="px-2 py-0.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${statusMeta.cls}">
-                            ${statusMeta.label}
-                          </button>
-                          <button type="button" onclick="openItemModal('edit', '${seg.id}', '${item.id}')" class="no-print p-1 text-slate-400 hover:text-brand-600 rounded cursor-pointer" title="Edit item">✎</button>
-                          <button type="button" onclick="deleteItem('${seg.id}', '${item.id}')" class="no-print p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer" title="Delete item">✕</button>
-                        </div>
-                      </div>
-                      <h3 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${escapeHTML(L(item, 'name'))}</h3>
-                      <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2">${escapeHTML(L(item, 'desc'))}</p>
-                    </div>
-                  </div>
-
-                  <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex flex-wrap items-center gap-1.5">
-                      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1">
-                        <input type="number" value="${item.qty}" min="0" step="1" onchange="updateItemInline('${seg.id}', '${item.id}', 'qty', this.value)" class="w-10 text-center text-xs font-bold text-slate-900 bg-transparent focus:outline-none" />
-                        <span class="text-[10px] text-slate-500">${escapeHTML(LUnit(item.unit))}</span>
-                      </div>
-                      <span class="text-xs text-slate-400">×</span>
-                      <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1">
-                        <span class="text-[10px] text-slate-400 mr-0.5">€</span>
-                        <input type="number" value="${Number(item.priceTTC).toFixed(2)}" min="0" step="0.01" onchange="updateItemInline('${seg.id}', '${item.id}', 'priceTTC', this.value)" class="w-14 text-right text-xs font-bold text-slate-900 bg-transparent focus:outline-none" />
-                      </div>
-                      <select onchange="updateItemInline('${seg.id}', '${item.id}', 'vat', this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-[10px] font-bold text-slate-600 cursor-pointer" title="Custom VAT %">
-                        <option value="20" ${vatRate === 20 ? 'selected' : ''}>TVA 20%</option>
-                        <option value="10" ${vatRate === 10 ? 'selected' : ''}>TVA 10%</option>
-                        <option value="5.5" ${vatRate === 5.5 ? 'selected' : ''}>TVA 5.5%</option>
-                        <option value="0" ${vatRate === 0 ? 'selected' : ''}>TVA 0%</option>
-                      </select>
-                    </div>
-
-                    <div class="text-right">
-                      <div class="text-sm font-extrabold text-slate-900">${formatEUR(lineTTC)} <span class="text-[10px] font-normal text-slate-400">TTC</span></div>
-                      <div class="flex items-center justify-end gap-2 text-[10px] text-slate-500">
-                        <span>${formatEUR(lineHT)} HT</span>
-                        ${item.link ? `<a href="${escapeHTML(item.link)}" target="_blank" rel="noopener noreferrer" class="font-bold text-brand-600 hover:underline">${escapeHTML(t('linkLabel'))}</a>` : ''}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `;
-            }).join('');
-
-        return `
-          <section class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden print-break-avoid">
-            <div class="px-4 sm:px-5 py-3.5 ${headerBg} border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <span class="w-7 h-7 rounded-xl ${badgeBg} text-white font-extrabold text-xs flex items-center justify-center">${sIdx + 1}</span>
-                <div>
-                  <h2 class="text-sm sm:text-base font-bold text-slate-900">${escapeHTML(L(seg, 'title'))}</h2>
-                  <p class="text-xs text-slate-500">${escapeHTML(L(seg, 'subtitle'))}</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" onclick="openItemModal('add', '${seg.id}')" class="no-print px-2.5 py-1 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">${escapeHTML(t('addItemShort'))}</button>
-                <button type="button" onclick="openSegmentModal('edit', '${seg.id}')" class="no-print p-1.5 rounded-lg text-xs text-slate-500 hover:bg-white cursor-pointer" title="Rename Segment">✎</button>
-                ${proj.segments.length > 1 ? `<button type="button" onclick="deleteSegment('${seg.id}')" class="no-print p-1.5 rounded-lg text-xs text-slate-400 hover:text-rose-600 cursor-pointer" title="Delete Segment">🗑</button>` : ''}
-                <div class="text-right pl-2 border-l border-slate-200">
-                  <div class="text-sm sm:text-base font-extrabold text-slate-900">${formatEUR(segTTC)} <span class="text-[10px] font-semibold text-slate-400">TTC</span></div>
-                  <div class="text-[10px] text-slate-500">${formatEUR(segHT)} HT</div>
-                </div>
-              </div>
-            </div>
-            <div class="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-              ${itemsHTML}
-            </div>
-          </section>
-        `;
-      }).join('');
-    }
-
-    function renderLabor(proj, m) {
-      const tbody = document.getElementById('labor-tbody');
-      const dayUnit = appState.lang === 'fr' ? 'j' : 'd';
-      const cureWord = appState.lang === 'fr' ? 'séchage' : 'cure';
-      tbody.innerHTML = proj.labor.map((phase, idx) => {
-        const isPro = phase.mode === 'pro';
-        const ht = Number(phase.costHT) || 0;
-        const vat = Number(phase.vat ?? 10);
-        const ttc = ht * (1 + vat / 100);
-
-        return `
-          <tr class="${isPro ? 'bg-white' : 'bg-emerald-50/40'} hover:bg-slate-50/80 transition">
-            <td class="py-3 px-4">
-              <div class="font-bold text-slate-900 text-xs sm:text-sm">${idx + 1}. ${escapeHTML(L(phase, 'name'))}</div>
-              <div class="text-xs text-slate-500">${escapeHTML(L(phase, 'desc'))} ${phase.cureDays > 0 ? `<span class="text-amber-700 font-semibold">(+${phase.cureDays}${dayUnit} ${cureWord})</span>` : ''}</div>
-            </td>
-            <td class="py-3 px-3 text-center whitespace-nowrap">
-              <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
-                <button type="button" onclick="setPhaseMode('${phase.id}', 'pro')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${isPro ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600'}">
-                  ${t('modePro')}
-                </button>
-                <button type="button" onclick="setPhaseMode('${phase.id}', 'diy')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${!isPro ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-600'}">
-                  ${t('modeDiy')}
-                </button>
-              </div>
-            </td>
-            <td class="py-3 px-3 text-right whitespace-nowrap">
-              <input type="number" value="${Number(phase.days).toFixed(1)}" min="0.5" step="0.5" onchange="updateLaborInline('${phase.id}', 'days', this.value)" class="w-14 text-right font-bold text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1" />
-              <span class="text-xs text-slate-400">${dayUnit}</span>
-            </td>
-            <td class="py-3 px-3 text-right whitespace-nowrap">
-              <span class="text-xs text-slate-400">€</span>
-              <input type="number" value="${ht}" min="0" step="10" onchange="updateLaborInline('${phase.id}', 'costHT', this.value)" class="w-16 text-right font-bold text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 ${!isPro ? 'line-through text-slate-400' : ''}" />
-            </td>
-            <td class="py-3 px-3 text-right text-xs text-slate-500">${vat}%</td>
-            <td class="py-3 px-4 text-right whitespace-nowrap">
-              ${isPro
-                ? `<span class="font-extrabold text-slate-900">${formatEUR(ttc)}</span>`
-                : `<span class="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">€0.00 (-${formatEUR(ttc)})</span>`
-              }
-            </td>
-            <td class="py-3 px-3 text-right whitespace-nowrap no-print">
-              <button type="button" onclick="openLaborModal('edit', '${phase.id}')" class="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer">✎</button>
-              <button type="button" onclick="deleteLaborPhase('${phase.id}')" class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer">✕</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      document.getElementById('travel-days-label').textContent = m.proDays.toFixed(1);
-      document.getElementById('travel-rate-label').textContent = Number(proj.travelDailyHT || 0).toFixed(0);
-      document.getElementById('travel-days-cell').textContent = `${m.proDays.toFixed(1)} ${dayUnit}`;
-      document.getElementById('travel-rate-input').value = proj.travelDailyHT || 0;
-      document.getElementById('travel-total-ttc').textContent = formatEUR(m.travelTTC);
-    }
-
-    function renderGantt(proj) {
-      const box = document.getElementById('gantt-box');
-      const dayPrefix = appState.lang === 'fr' ? 'J' : 'D';
-      const dayUnit = appState.lang === 'fr' ? 'j' : 'd';
-      let cursor = 0;
-      const bars = [];
-
-      proj.labor.forEach((p, idx) => {
-        const d = Math.max(0.5, Number(p.days) || 0.5);
-        bars.push({ label: `${idx + 1}. ${L(p, 'name')}`, dur: d, start: cursor, kind: p.mode });
-        cursor += d;
-        if (Number(p.cureDays) > 0) {
-          const cd = Number(p.cureDays);
-          bars.push({ label: `↳ ${t('modeCure')} (${cd}${dayUnit})`, dur: cd, start: cursor, kind: 'cure' });
-          cursor += cd * 0.75;
-        }
+    function syncTileBoxesFromCalc(proj) {
+      const net = Number(proj.netAreaM2) || 10.72;
+      const boxCov = Number(proj.boxCoverageM2) || 1.62;
+      const waste = Number(proj.wastePct) ?? 15;
+      const boxes = Math.ceil((net * (1 + waste / 100)) / boxCov);
+      (proj.segments || []).forEach(s => {
+        (s.items || []).forEach(i => {
+          if (i.isTileItem) i.qty = boxes;
+        });
       });
-
-      const maxDays = Math.max(10, Math.ceil(cursor));
-      let dayCols = '';
-      for (let i = 1; i <= maxDays; i++) {
-        dayCols += `<div class="text-center text-[10px] font-bold text-slate-500 border-l border-slate-200 py-1">${dayPrefix}${i}</div>`;
-      }
-
-      const rowsHTML = bars.map(b => {
-        const left = (b.start / maxDays) * 100;
-        const width = Math.max((b.dur / maxDays) * 100, 4);
-        let cls = 'bg-indigo-600 text-white';
-        if (b.kind === 'diy') cls = 'bg-emerald-500 text-white';
-        if (b.kind === 'cure') cls = 'curing-pattern text-amber-950';
-
-        return `
-          <div class="grid grid-cols-12 items-center border-b border-slate-100 py-1.5">
-            <div class="col-span-4 pr-2 text-xs font-semibold text-slate-700 truncate">${escapeHTML(b.label)}</div>
-            <div class="col-span-8 relative h-6 bg-slate-100 rounded-lg overflow-hidden">
-              <div style="left:${left.toFixed(1)}%; width:${width.toFixed(1)}%" class="absolute top-0.5 bottom-0.5 rounded px-2 flex items-center text-[10px] font-bold truncate ${cls}">
-                ${b.dur.toFixed(1)}${dayUnit}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      box.innerHTML = `
-        <div class="grid grid-cols-12 bg-slate-50 rounded-t-xl border border-slate-200">
-          <div class="col-span-4 px-3 py-1 text-[10px] font-bold uppercase text-slate-500">Phase</div>
-          <div class="col-span-8 grid" style="grid-template-columns: repeat(${maxDays}, minmax(0, 1fr));">${dayCols}</div>
-        </div>
-        <div class="border-x border-b border-slate-200 rounded-b-xl px-2">${rowsHTML}</div>
-      `;
     }
 
-    // =========================================================================
-    // 5. REUSABLE MATERIAL PRESET PACKS (.JSON MERGE & BUILT-IN KITS)
-    // =========================================================================
-    function openPresetModal() {
+    function toggleGeometryModule(checked) {
       const proj = getActiveProject();
-      const sel = document.getElementById('preset-export-seg-select');
-      sel.innerHTML = proj.segments.map(s => `<option value="${s.id}">${escapeHTML(L(s, 'title'))} (${s.items.length} items)</option>`).join('');
-      document.getElementById('preset-modal').classList.remove('hidden');
+      if (!proj) return;
+      proj.showGeometry = Boolean(checked);
+      saveAppState();
+      renderApp();
     }
 
-    function exportSegmentAsPresetJSON() {
+    function toggleGeometryCollapse() {
       const proj = getActiveProject();
-      const segId = document.getElementById('preset-export-seg-select').value;
-      const seg = proj.segments.find(s => s.id === segId);
-      if (!seg) return;
-
-      const presetPayload = {
-        type: 'renovation_studio_preset_pack',
-        exportedAt: new Date().toISOString(),
-        segment: JSON.parse(JSON.stringify(seg))
-      };
-      const blob = new Blob([JSON.stringify(presetPayload, null, 2)], { type: 'application/json' });
-      triggerDownload(blob, `Preset_${seg.title.replace(/[^a-z0-9]/gi, '_')}.json`);
-      showToast('💾 Saved reusable Material Preset Pack (.json)!');
+      if (!proj) return;
+      proj.geoCollapsed = !proj.geoCollapsed;
+      saveAppState(true);
+      renderApp();
     }
 
-    function handleImportPresetJSON(e) {
-      const file = e.target.files && e.target.files[0];
+    function handlePlanImageUpload(event) {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const parsed = JSON.parse(evt.target.result);
-          const proj = getActiveProject();
-
-          if (parsed && parsed.segment && Array.isArray(parsed.segment.items)) {
-            const newSeg = JSON.parse(JSON.stringify(parsed.segment));
-            newSeg.id = 'seg_' + Date.now();
-            newSeg.items.forEach((it, idx) => { it.id = 'item_' + Date.now() + '_' + idx; });
-            proj.segments.push(newSeg);
-            saveAppState();
-            closeModal('preset-modal');
-            renderApp();
-            showToast(`➕ Merged preset "${newSeg.title}" into "${proj.name}"!`);
-          } else if (parsed && Array.isArray(parsed.items)) {
-            const targetSeg = proj.segments.find(s => s.kind === 'materials') || proj.segments[0];
-            parsed.items.forEach((it, idx) => {
-              const copy = JSON.parse(JSON.stringify(it));
-              copy.id = 'item_' + Date.now() + '_' + idx;
-              targetSeg.items.push(copy);
-            });
-            saveAppState();
-            closeModal('preset-modal');
-            renderApp();
-            showToast(`➕ Merged ${parsed.items.length} preset items into "${proj.name}"!`);
-          } else {
-            showToast('Invalid preset .json format.');
-          }
-        } catch (err) {
-          showToast('Failed to parse preset JSON file.');
-        }
+      reader.onload = function(e) {
+        const proj = getActiveProject();
+        if (!proj) return;
+        if (!Array.isArray(proj.planImages)) proj.planImages = [];
+        proj.planImages.push({ title: file.name, url: e.target.result });
+        proj.showGeometry = true;
+        proj.geoCollapsed = false;
+        saveAppState();
+        renderApp();
+        showToast('📷 Floor plan / photo added to project!');
       };
-      reader.readAsText(file);
-      e.target.value = '';
+      reader.readAsDataURL(file);
+      event.target.value = '';
     }
 
-    function insertBuiltInKit(kitKey) {
+    function promptPlanImageUrl() {
       const proj = getActiveProject();
-      const defaultBath = createDefaultData().projects[0];
-      let sourceSeg = null;
-      if (kitKey === 'drywall_kit') {
-        sourceSeg = defaultBath.segments[1];
-      } else if (kitKey === 'tiling_spec_kit') {
-        sourceSeg = defaultBath.segments[2];
-      }
-      if (!sourceSeg) return;
-
-      const clonedSeg = JSON.parse(JSON.stringify(sourceSeg));
-      clonedSeg.id = 'seg_' + Date.now();
-      clonedSeg.items.forEach((it, idx) => { it.id = 'kit_' + Date.now() + '_' + idx; });
-      proj.segments.push(clonedSeg);
-
-      saveAppState();
-      closeModal('preset-modal');
-      renderApp();
-      showToast(`🧰 Added "${L(clonedSeg, 'title')}" to "${proj.name}"!`);
+      if (!proj) return;
+      openItemModal('add');
     }
 
-    // =========================================================================
-    // 6. USER INTERACTIONS & CRUD CONTROLLERS
-    // =========================================================================
-    function setLanguage(lang) {
-      appState.lang = lang;
-      saveAppState(true);
+    function removePlanImage(idx) {
+      const proj = getActiveProject();
+      if (!proj || !Array.isArray(proj.planImages)) return;
+      proj.planImages.splice(idx, 1);
+      saveAppState();
       renderApp();
     }
 
@@ -2730,177 +2648,434 @@ alter publication supabase_realtime add table reno_projects;`;
       renderApp();
     }
 
-    function switchProject(projectId) {
-      if (appState.lockedProjectId) return;
-      appState.activeProjectId = projectId;
-      appState.currentView = 'workspace';
-      saveAppState(true);
-      renderApp();
-    }
-
-    function toggleGeometryModule(checked) {
-      const proj = getActiveProject();
-      proj.showGeometry = checked;
-      saveAppState();
-      renderApp();
-    }
-
-    function toggleGeometryCollapse() {
-      const proj = getActiveProject();
-      proj.geoCollapsed = !proj.geoCollapsed;
-      saveAppState();
-      renderApp();
-    }
-
-    function handleTileWasteChange(val) {
-      const proj = getActiveProject();
-      const pct = parseInt(val, 10) || 15;
-      proj.wastePct = pct;
-      const netArea = Number(proj.netAreaM2 || 10.72);
-      const boxCov = Number(proj.boxCoverageM2 || 1.62);
-      const boxes = Math.ceil((netArea * (1 + pct / 100)) / boxCov);
-
-      proj.segments.forEach(seg => {
-        seg.items.forEach(item => {
-          if (item.isTileItem || item.id === 'm1') {
-            item.qty = boxes;
-          }
-        });
+    function renderFilterButtons() {
+      const statuses = ['all', 'to_buy', 'ordered', 'delivered'];
+      statuses.forEach(st => {
+        const btn = document.getElementById('filter-btn-' + st);
+        if (!btn) return;
+        const active = appState.statusFilter === st;
+        btn.className = `px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+          active ? 'bg-slate-900 text-white shadow-2xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+        }`;
       });
-      saveAppState();
-      renderApp();
+    }
+
+    function renderSegments(proj) {
+      const container = document.getElementById('segments-container');
+      if (!container) return;
+
+      container.innerHTML = (proj.segments || []).map(seg => {
+        const allItems = seg.items || [];
+        const segSubtotalTTC = allItems.reduce((acc, it) => acc + (Number(it.qty) || 0) * (Number(it.priceTTC) || 0), 0);
+        const filteredItems = appState.statusFilter === 'all'
+          ? allItems
+          : allItems.filter(it => (it.status || 'to_buy') === appState.statusFilter);
+
+        const headerBg = seg.kind === 'furniture' ? 'bg-sky-50/70' : 'bg-amber-50/70';
+        const badgeBg = seg.kind === 'furniture' ? 'bg-sky-600' : 'bg-amber-600';
+
+        const cardsHTML = filteredItems.length === 0
+          ? `<div class="text-xs text-slate-400 italic py-4 text-center">${escapeHTML(t('noItemsFilter'))}</div>`
+          : `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              ${filteredItems.map(item => renderItemCardHTML(seg.id, item)).join('')}
+            </div>`;
+
+        return `
+          <section class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden print-break-avoid">
+            <div class="px-4 sm:px-5 py-3.5 ${headerBg} border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <span class="w-7 h-7 rounded-xl ${badgeBg} text-white font-extrabold text-xs flex items-center justify-center">
+                  ${seg.kind === 'furniture' ? '🚿' : '🧱'}
+                </span>
+                <div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">${escapeHTML(L(seg, 'title'))}</h3>
+                  <p class="text-xs text-slate-500">${escapeHTML(L(seg, 'subtitle'))}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="openItemModal('add', '${escapeHTML(seg.id)}')" class="no-print px-2.5 py-1 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
+                  ${escapeHTML(t('addItemShort'))}
+                </button>
+                <button type="button" onclick="openSegmentModal('edit', '${escapeHTML(seg.id)}')" class="no-print px-2 py-1 rounded-lg text-xs text-slate-500 hover:bg-white cursor-pointer" title="Edit Segment">✎</button>
+                ${proj.segments.length > 1 ? `
+                  <button type="button" onclick="deleteSegment('${escapeHTML(seg.id)}')" class="no-print px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-rose-600 cursor-pointer" title="Delete Segment">✕</button>
+                ` : ''}
+                <div class="text-right pl-2">
+                  <span class="text-base sm:text-lg font-extrabold text-slate-900">${fmtEUR(segSubtotalTTC)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 sm:p-5">${cardsHTML}</div>
+          </section>
+        `;
+      }).join('');
+    }
+
+    function renderItemCardHTML(segId, item) {
+      const cat = CATEGORY_ICONS[item.icon] || CATEGORY_ICONS.box;
+      const lineTTC = (Number(item.qty) || 0) * (Number(item.priceTTC) || 0);
+      const st = item.status || 'to_buy';
+      let stBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+      if (st === 'ordered') stBadgeClass = 'bg-blue-50 text-blue-800 border-blue-200';
+      if (st === 'delivered') stBadgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+
+      const thumb = item.img
+        ? `<img src="${escapeHTML(item.img)}" alt="" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0" onerror="this.style.display='none'" />`
+        : `<div class="w-12 h-12 rounded-xl border ${cat.bg} flex items-center justify-center text-xl shrink-0">${cat.emoji}</div>`;
+
+      return `
+        <div class="rounded-2xl border border-slate-200/90 bg-white hover:border-brand-300 transition p-3.5 flex flex-col justify-between gap-3 shadow-2xs">
+          <div class="flex items-start gap-3">
+            ${thumb}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <button type="button" onclick="cycleItemStatus('${escapeHTML(segId)}', '${escapeHTML(item.id)}')" class="px-2 py-0.5 rounded-lg text-[11px] font-bold border ${stBadgeClass} cursor-pointer" title="Tap to cycle To Buy → Ordered → Delivered">
+                  ${escapeHTML(t('status_' + st))}
+                </button>
+                <div class="flex items-center gap-1 no-print">
+                  <button type="button" onclick="openItemModal('edit', '${escapeHTML(segId)}', '${escapeHTML(item.id)}')" class="p-1 text-slate-400 hover:text-brand-600 cursor-pointer" title="Edit">✎</button>
+                  <button type="button" onclick="deleteItem('${escapeHTML(segId)}', '${escapeHTML(item.id)}')" class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer" title="Delete">✕</button>
+                </div>
+              </div>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${escapeHTML(L(item, 'name'))}</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2">${escapeHTML(L(item, 'desc'))}</p>
+            </div>
+          </div>
+
+          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1">
+              <input type="number" value="${item.qty}" min="0" step="1" onchange="updateItemQuick('${escapeHTML(segId)}', '${escapeHTML(item.id)}', 'qty', this.value)" class="w-12 text-center text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg py-1" />
+              <span class="text-[11px] text-slate-500">${escapeHTML(LUnit(item.unit))}</span>
+              <span class="text-xs text-slate-300">×</span>
+              <div class="inline-flex items-center bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1">
+                <span class="text-[10px] text-slate-400 mr-0.5">€</span>
+                <input type="number" value="${Number(item.priceTTC).toFixed(2)}" min="0" step="0.01" onchange="updateItemQuick('${escapeHTML(segId)}', '${escapeHTML(item.id)}', 'priceTTC', this.value)" class="w-14 text-right text-xs font-bold bg-transparent focus:outline-none" />
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-extrabold text-slate-900">${fmtEUR(lineTTC)}</div>
+              <div class="flex items-center justify-end gap-1.5 text-[10px] text-slate-400">
+                <span>TVA ${item.vat ?? 20}%</span>
+                ${item.link ? `<a href="${escapeHTML(item.link)}" target="_blank" rel="noopener noreferrer" class="font-bold text-brand-600 hover:underline">${escapeHTML(item.store || t('linkLabel'))} ↗</a>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     function cycleItemStatus(segId, itemId) {
       const proj = getActiveProject();
-      const seg = proj.segments.find(s => s.id === segId);
-      if (!seg) return;
-      const item = seg.items.find(i => i.id === itemId);
+      const seg = (proj.segments || []).find(s => s.id === segId);
+      const item = (seg?.items || []).find(i => i.id === itemId);
       if (!item) return;
-
       const order = ['to_buy', 'ordered', 'delivered'];
-      const nextIdx = (order.indexOf(item.status) + 1) % order.length;
-      item.status = order[nextIdx];
+      const next = order[(order.indexOf(item.status || 'to_buy') + 1) % order.length];
+      item.status = next;
       saveAppState();
       renderApp();
     }
 
-    function updateItemInline(segId, itemId, field, value) {
+    function updateItemQuick(segId, itemId, field, val) {
       const proj = getActiveProject();
-      const seg = proj.segments.find(s => s.id === segId);
-      if (!seg) return;
-      const item = seg.items.find(i => i.id === itemId);
+      const seg = (proj.segments || []).find(s => s.id === segId);
+      const item = (seg?.items || []).find(i => i.id === itemId);
       if (!item) return;
-
-      item[field] = Math.max(0, parseFloat(value) || 0);
+      item[field] = Math.max(0, parseFloat(val) || 0);
       saveAppState();
       renderApp();
     }
 
     function deleteItem(segId, itemId) {
       const proj = getActiveProject();
-      const seg = proj.segments.find(s => s.id === segId);
+      const seg = (proj.segments || []).find(s => s.id === segId);
       if (!seg) return;
-      seg.items = seg.items.filter(i => i.id !== itemId);
+      seg.items = (seg.items || []).filter(i => i.id !== itemId);
       saveAppState();
       renderApp();
-      showToast('Item removed.');
+      showToast('🗑️ Item deleted.');
     }
 
-    function renderIconPicker(selectedIcon) {
-      const grid = document.getElementById('icon-picker-grid');
-      document.getElementById('item-icon').value = selectedIcon;
-      grid.innerHTML = Object.entries(CATEGORY_ICONS).map(([key, meta]) => `
-        <button type="button" onclick="renderIconPicker('${key}')" class="p-2 rounded-xl border text-center transition cursor-pointer ${key === selectedIcon ? 'border-brand-600 bg-brand-50 ring-2 ring-brand-500/30' : 'border-slate-200 hover:bg-slate-50'}" title="${meta.label}">
-          <span class="text-lg block">${meta.emoji}</span>
-        </button>
-      `).join('');
+    function renderLaborSection(proj, m) {
+      const tbody = document.getElementById('labor-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = (proj.labor || []).map((ph, idx) => {
+        const isPro = ph.mode === 'pro';
+        const ht = Number(ph.costHT) || 0;
+        const vat = Number(ph.vat ?? 10);
+        const ttc = ht * (1 + vat / 100);
+        return `
+          <tr class="${isPro ? 'bg-white' : 'bg-emerald-50/40'}">
+            <td class="py-3 px-4">
+              <div class="font-bold text-slate-900 text-xs sm:text-sm">${idx + 1}. ${escapeHTML(L(ph, 'name'))}</div>
+              <div class="text-xs text-slate-500">${escapeHTML(L(ph, 'desc'))}</div>
+            </td>
+            <td class="py-3 px-3 text-center whitespace-nowrap">
+              <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                <button type="button" onclick="setPhaseMode('${escapeHTML(ph.id)}', 'pro')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${isPro ? 'bg-indigo-600 text-white' : 'text-slate-600'}">${escapeHTML(t('modePro'))}</button>
+                <button type="button" onclick="setPhaseMode('${escapeHTML(ph.id)}', 'diy')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${!isPro ? 'bg-emerald-600 text-white' : 'text-slate-600'}">${escapeHTML(t('modeDiy'))}</button>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+              <input type="number" value="${Number(ph.days).toFixed(1)}" min="0.5" step="0.5" onchange="updatePhaseQuick('${escapeHTML(ph.id)}', 'days', this.value)" class="w-14 text-right font-bold text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1" />
+            </td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+              <input type="number" value="${ht}" min="0" step="10" onchange="updatePhaseQuick('${escapeHTML(ph.id)}', 'costHT', this.value)" class="w-16 text-right font-bold text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 ${!isPro ? 'line-through text-slate-400' : ''}" />
+            </td>
+            <td class="py-3 px-3 text-right text-xs text-slate-500">${vat}%</td>
+            <td class="py-3 px-4 text-right font-extrabold text-slate-900 whitespace-nowrap">
+              ${isPro ? fmtEUR(ttc) : `<span class="text-xs font-bold text-emerald-700">€0.00 (-${fmtEUR(ttc)})</span>`}
+            </td>
+            <td class="py-3 px-3 text-right no-print whitespace-nowrap">
+              <button type="button" onclick="openLaborModal('edit', '${escapeHTML(ph.id)}')" class="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer">✎</button>
+              <button type="button" onclick="deleteLaborPhase('${escapeHTML(ph.id)}')" class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('travel-days-label').textContent = m.proDays.toFixed(1);
+      document.getElementById('travel-rate-label').textContent = Number(proj.travelDailyHT || 50).toFixed(0);
+      document.getElementById('travel-days-cell').textContent = `${m.proDays.toFixed(1)} d`;
+      document.getElementById('travel-rate-input').value = proj.travelDailyHT ?? 50;
+      document.getElementById('travel-total-ttc').textContent = fmtEUR(m.travelTTC);
+    }
+
+    function setPhaseMode(phaseId, mode) {
+      const proj = getActiveProject();
+      const ph = (proj.labor || []).find(l => l.id === phaseId);
+      if (!ph) return;
+      ph.mode = mode;
+      saveAppState();
+      renderApp();
+    }
+
+    function updatePhaseQuick(phaseId, field, val) {
+      const proj = getActiveProject();
+      const ph = (proj.labor || []).find(l => l.id === phaseId);
+      if (!ph) return;
+      ph[field] = Math.max(0, parseFloat(val) || 0);
+      saveAppState();
+      renderApp();
+    }
+
+    function deleteLaborPhase(phaseId) {
+      const proj = getActiveProject();
+      proj.labor = (proj.labor || []).filter(l => l.id !== phaseId);
+      saveAppState();
+      renderApp();
+    }
+
+    function updateTravelRate(val) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      proj.travelDailyHT = Math.max(0, parseFloat(val) || 0);
+      saveAppState();
+      renderApp();
+    }
+
+    function applyLaborPreset(kind) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      (proj.labor || []).forEach((ph, idx) => {
+        if (kind === 'pro') {
+          ph.mode = 'pro';
+        } else {
+          // Hybrid DIY: first and last two phases DIY, core technical phases Pro
+          ph.mode = (idx === 0 || idx >= proj.labor.length - 2) ? 'diy' : 'pro';
+        }
+      });
+      saveAppState();
+      renderApp();
+      showToast(kind === 'pro' ? '🛠️ Set to 100% Contractor' : '⚡ Applied Hybrid DIY Preset!');
+    }
+
+    function renderGantt(proj) {
+      const box = document.getElementById('gantt-box');
+      if (!box) return;
+      let cursor = 0;
+      const rows = [];
+      (proj.labor || []).forEach((ph, idx) => {
+        const d = Math.max(0.5, Number(ph.days) || 0.5);
+        rows.push({ label: `${idx + 1}. ${L(ph, 'name')}`, dur: d, start: cursor, mode: ph.mode });
+        cursor += d;
+        if (Number(ph.cureDays) > 0) {
+          const cd = Number(ph.cureDays);
+          rows.push({ label: `↳ ${t('modeCure')}`, dur: cd, start: cursor, mode: 'cure' });
+          cursor += cd * 0.75;
+        }
+      });
+
+      const maxDays = Math.max(10, Math.ceil(cursor));
+      let head = '';
+      for (let i = 1; i <= maxDays; i++) {
+        head += `<div class="text-center text-[10px] font-bold text-slate-500 border-l border-slate-200 py-1">D${i}</div>`;
+      }
+
+      const body = rows.map(r => {
+        const left = (r.start / maxDays) * 100;
+        const width = Math.max(3.5, (r.dur / maxDays) * 100);
+        const cls = r.mode === 'pro'
+          ? 'bg-indigo-600 text-white'
+          : (r.mode === 'diy' ? 'bg-emerald-500 text-white' : 'curing-pattern text-amber-950');
+        return `
+          <div class="grid grid-cols-12 items-center border-b border-slate-100 py-1.5 text-xs">
+            <div class="col-span-4 pr-2 font-semibold text-slate-700 truncate">${escapeHTML(r.label)}</div>
+            <div class="col-span-8 relative h-6 bg-slate-100 rounded-lg overflow-hidden">
+              <div style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%" class="absolute top-0.5 bottom-0.5 rounded px-1.5 flex items-center text-[10px] font-bold ${cls}">
+                ${r.dur}d
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      box.innerHTML = `
+        <div class="grid grid-cols-12 bg-slate-50 border border-slate-200 rounded-t-xl">
+          <div class="col-span-4 px-3 py-1 text-[10px] font-bold uppercase text-slate-500">Phase</div>
+          <div class="col-span-8 grid" style="grid-template-columns: repeat(${maxDays}, minmax(0, 1fr))">${head}</div>
+        </div>
+        <div class="border-x border-b border-slate-200 rounded-b-xl px-2">${body}</div>
+      `;
+    }
+
+    // =========================================================================
+    // 5. MODALS: ITEM, SEGMENT, LABOR, PROJECT, PRESETS & EXPORT
+    // =========================================================================
+    function closeModal(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function openConfirmModal(title, desc, onConfirm) {
+      document.getElementById('confirm-modal-title').textContent = title;
+      document.getElementById('confirm-modal-desc').textContent = desc;
+      const btn = document.getElementById('confirm-modal-btn');
+      btn.onclick = () => {
+        closeModal('confirm-modal');
+        if (onConfirm) onConfirm();
+      };
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function openResetAllModal() {
+      openConfirmModal(
+        appState.lang === 'fr' ? 'Rétablir les projets par défaut ?' : 'Reset to Factory Default Projects?',
+        appState.lang === 'fr' ? 'Vos projets actuels seront remplacés par les modèles initiaux.' : 'Replaces local projects with the default Île-de-France Bathroom and Guest WC templates.',
+        () => {
+          appState = createDefaultData();
+          saveAppState();
+          renderApp();
+          showToast('🔄 Default projects restored.');
+        }
+      );
+    }
+
+    function saveContractorNote(val, showMsg = false) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      proj.contractorNote = val.trim();
+      proj.contractorNoteUpdatedAt = new Date().toLocaleString(appState.lang === 'fr' ? 'fr-FR' : 'en-GB', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+      });
+      saveAppState();
+      renderApp();
+      if (showMsg) showToast('📝 Site note saved & synced!');
     }
 
     function openItemModal(mode, segId, itemId) {
       const proj = getActiveProject();
+      if (!proj) return;
       const segSelect = document.getElementById('item-segment-id');
-      segSelect.innerHTML = proj.segments.map(s => `<option value="${s.id}">${escapeHTML(L(s, 'title'))}</option>`).join('');
+      segSelect.innerHTML = (proj.segments || []).map(s =>
+        `<option value="${escapeHTML(s.id)}">${escapeHTML(L(s, 'title'))}</option>`
+      ).join('');
+
+      const picker = document.getElementById('icon-picker-grid');
+      const currentIcon = document.getElementById('item-icon').value || 'tile';
+      picker.innerHTML = Object.keys(CATEGORY_ICONS).map(k => {
+        const ic = CATEGORY_ICONS[k];
+        return `<button type="button" onclick="selectModalIcon('${k}')" id="icon-btn-${k}" class="p-2 rounded-xl border text-center text-base cursor-pointer ${k === currentIcon ? 'border-brand-600 bg-brand-50' : 'border-slate-200'}">${ic.emoji}</button>`;
+      }).join('');
 
       if (mode === 'edit' && segId && itemId) {
         const seg = proj.segments.find(s => s.id === segId);
-        const item = seg ? seg.items.find(i => i.id === itemId) : null;
-        if (!item) return;
-
-        document.getElementById('item-modal-title').textContent = 'Edit Item';
-        document.getElementById('item-edit-id').value = `${segId}::${itemId}`;
+        const it = (seg?.items || []).find(i => i.id === itemId);
+        if (!it) return;
+        document.getElementById('item-edit-id').value = it.id;
         segSelect.value = segId;
-        document.getElementById('item-status').value = item.status || 'to_buy';
-        renderIconPicker(item.icon || 'tile');
-        document.getElementById('item-name').value = item.name;
-        document.getElementById('item-desc').value = item.desc || '';
-        document.getElementById('item-qty').value = item.qty;
-        document.getElementById('item-unit').value = item.unit || 'unit';
-        document.getElementById('item-price').value = item.priceTTC;
-        document.getElementById('item-vat').value = String(item.vat ?? 20);
-        document.getElementById('item-store').value = item.store || '';
-        document.getElementById('item-link').value = item.link || '';
-        document.getElementById('item-img').value = item.img || '';
+        document.getElementById('item-status').value = it.status || 'to_buy';
+        selectModalIcon(it.icon || 'tile');
+        document.getElementById('item-name').value = it.name;
+        document.getElementById('item-desc').value = it.desc || '';
+        document.getElementById('item-qty').value = it.qty;
+        document.getElementById('item-unit').value = it.unit || 'unit';
+        document.getElementById('item-price').value = it.priceTTC;
+        document.getElementById('item-vat').value = String(it.vat ?? 20);
+        document.getElementById('item-store').value = it.store || '';
+        document.getElementById('item-link').value = it.link || '';
+        document.getElementById('item-img').value = it.img || '';
       } else {
-        document.getElementById('item-modal-title').textContent = 'Add New Item';
         document.getElementById('item-edit-id').value = '';
         if (segId) segSelect.value = segId;
-        document.getElementById('item-status').value = 'to_buy';
-        renderIconPicker('tile');
         document.getElementById('item-name').value = '';
         document.getElementById('item-desc').value = '';
         document.getElementById('item-qty').value = 1;
         document.getElementById('item-unit').value = 'unit';
-        document.getElementById('item-price').value = 25.00;
+        document.getElementById('item-price').value = 0;
         document.getElementById('item-vat').value = '20';
         document.getElementById('item-store').value = 'Leroy Merlin';
         document.getElementById('item-link').value = '';
         document.getElementById('item-img').value = '';
+        selectModalIcon('tile');
       }
 
       document.getElementById('item-modal').classList.remove('hidden');
     }
 
-    function saveItemForm(e) {
-      e.preventDefault();
+    function selectModalIcon(key) {
+      document.getElementById('item-icon').value = key;
+      Object.keys(CATEGORY_ICONS).forEach(k => {
+        const b = document.getElementById('icon-btn-' + k);
+        if (b) {
+          b.className = `p-2 rounded-xl border text-center text-base cursor-pointer ${k === key ? 'border-brand-600 bg-brand-50 ring-2 ring-brand-200' : 'border-slate-200'}`;
+        }
+      });
+    }
+
+    function saveItemForm(event) {
+      event.preventDefault();
       const proj = getActiveProject();
-      const editKey = document.getElementById('item-edit-id').value;
+      if (!proj) return;
+      const editId = document.getElementById('item-edit-id').value;
       const targetSegId = document.getElementById('item-segment-id').value;
       const targetSeg = proj.segments.find(s => s.id === targetSegId) || proj.segments[0];
 
-      const payload = {
-        id: editKey ? editKey.split('::')[1] : 'item_' + Date.now(),
-        icon: document.getElementById('item-icon').value || 'box',
+      const itemObj = {
+        id: editId || ('item_' + Date.now()),
+        icon: document.getElementById('item-icon').value || 'tile',
         name: document.getElementById('item-name').value.trim(),
         desc: document.getElementById('item-desc').value.trim(),
-        qty: parseFloat(document.getElementById('item-qty').value) || 0,
+        qty: parseFloat(document.getElementById('item-qty').value) || 1,
         unit: document.getElementById('item-unit').value.trim() || 'unit',
         priceTTC: parseFloat(document.getElementById('item-price').value) || 0,
-        vat: parseFloat(document.getElementById('item-vat').value) ?? 20,
-        status: document.getElementById('item-status').value,
-        store: document.getElementById('item-store').value.trim() || 'Store',
+        vat: parseFloat(document.getElementById('item-vat').value) || 20,
+        status: document.getElementById('item-status').value || 'to_buy',
+        store: document.getElementById('item-store').value.trim(),
         link: document.getElementById('item-link').value.trim(),
         img: document.getElementById('item-img').value.trim()
       };
 
-      if (editKey) {
-        const [oldSegId, oldItemId] = editKey.split('::');
-        const oldSeg = proj.segments.find(s => s.id === oldSegId);
-        if (oldSeg && oldSegId === targetSegId) {
-          const idx = oldSeg.items.findIndex(i => i.id === oldItemId);
-          if (idx > -1) oldSeg.items[idx] = { ...oldSeg.items[idx], ...payload };
-        } else if (oldSeg) {
-          oldSeg.items = oldSeg.items.filter(i => i.id !== oldItemId);
-          targetSeg.items.push(payload);
-        }
-      } else {
-        targetSeg.items.push(payload);
+      if (editId) {
+        proj.segments.forEach(s => {
+          s.items = (s.items || []).filter(i => i.id !== editId);
+        });
       }
+      targetSeg.items.push(itemObj);
 
       saveAppState();
       closeModal('item-modal');
       renderApp();
-      showToast('Item saved.');
+      showToast('✅ Item saved!');
     }
 
     function openSegmentModal(mode, segId) {
@@ -2908,13 +3083,11 @@ alter publication supabase_realtime add table reno_projects;`;
       if (mode === 'edit' && segId) {
         const seg = proj.segments.find(s => s.id === segId);
         if (!seg) return;
-        document.getElementById('segment-modal-title').textContent = 'Edit Segment';
         document.getElementById('segment-edit-id').value = seg.id;
         document.getElementById('segment-title-input').value = seg.title;
         document.getElementById('segment-sub-input').value = seg.subtitle || '';
         document.getElementById('segment-kind-input').value = seg.kind || 'materials';
       } else {
-        document.getElementById('segment-modal-title').textContent = 'Add New Segment';
         document.getElementById('segment-edit-id').value = '';
         document.getElementById('segment-title-input').value = '';
         document.getElementById('segment-sub-input').value = '';
@@ -2923,8 +3096,8 @@ alter publication supabase_realtime add table reno_projects;`;
       document.getElementById('segment-modal').classList.remove('hidden');
     }
 
-    function saveSegmentForm(e) {
-      e.preventDefault();
+    function saveSegmentForm(event) {
+      event.preventDefault();
       const proj = getActiveProject();
       const editId = document.getElementById('segment-edit-id').value;
       const title = document.getElementById('segment-title-input').value.trim();
@@ -2939,18 +3112,11 @@ alter publication supabase_realtime add table reno_projects;`;
           seg.kind = kind;
         }
       } else {
-        proj.segments.push({
-          id: 'seg_' + Date.now(),
-          kind,
-          title,
-          subtitle,
-          items: []
-        });
+        proj.segments.push({ id: 'seg_' + Date.now(), title, subtitle, kind, items: [] });
       }
       saveAppState();
       closeModal('segment-modal');
       renderApp();
-      showToast('Segment updated.');
     }
 
     function deleteSegment(segId) {
@@ -2959,67 +3125,27 @@ alter publication supabase_realtime add table reno_projects;`;
       proj.segments = proj.segments.filter(s => s.id !== segId);
       saveAppState();
       renderApp();
-      showToast('Segment removed.');
-    }
-
-    function setPhaseMode(phaseId, mode) {
-      const proj = getActiveProject();
-      const p = proj.labor.find(l => l.id === phaseId);
-      if (!p) return;
-      p.mode = mode;
-      saveAppState();
-      renderApp();
-    }
-
-    function updateLaborInline(phaseId, field, value) {
-      const proj = getActiveProject();
-      const p = proj.labor.find(l => l.id === phaseId);
-      if (!p) return;
-      p[field] = Math.max(0, parseFloat(value) || 0);
-      saveAppState();
-      renderApp();
-    }
-
-    function updateTravelRate(val) {
-      const proj = getActiveProject();
-      proj.travelDailyHT = Math.max(0, parseFloat(val) || 0);
-      saveAppState();
-      renderApp();
-    }
-
-    function applyLaborPreset(type) {
-      const proj = getActiveProject();
-      proj.labor.forEach((p, idx) => {
-        if (type === 'pro') {
-          p.mode = 'pro';
-        } else {
-          p.mode = (idx === 0 || idx === 5 || idx === 6) ? 'diy' : 'pro';
-        }
-      });
-      saveAppState();
-      renderApp();
-      showToast(type === 'pro' ? '100% Contractor mode applied.' : 'Hybrid DIY preset applied!');
     }
 
     function openLaborModal(mode, phaseId) {
       const proj = getActiveProject();
       if (mode === 'edit' && phaseId) {
-        const p = proj.labor.find(l => l.id === phaseId);
-        if (!p) return;
-        document.getElementById('labor-edit-id').value = p.id;
-        document.getElementById('labor-name-input').value = p.name;
-        document.getElementById('labor-desc-input').value = p.desc || '';
-        document.getElementById('labor-days-input').value = p.days;
-        document.getElementById('labor-ht-input').value = p.costHT;
-        document.getElementById('labor-vat-input').value = String(p.vat ?? 10);
-        document.getElementById('labor-mode-input').value = p.mode;
-        document.getElementById('labor-cure-input').value = p.cureDays || 0;
+        const ph = (proj.labor || []).find(l => l.id === phaseId);
+        if (!ph) return;
+        document.getElementById('labor-edit-id').value = ph.id;
+        document.getElementById('labor-name-input').value = ph.name;
+        document.getElementById('labor-desc-input').value = ph.desc || '';
+        document.getElementById('labor-days-input').value = ph.days;
+        document.getElementById('labor-ht-input').value = ph.costHT;
+        document.getElementById('labor-vat-input').value = String(ph.vat ?? 10);
+        document.getElementById('labor-mode-input').value = ph.mode || 'pro';
+        document.getElementById('labor-cure-input').value = ph.cureDays || 0;
       } else {
         document.getElementById('labor-edit-id').value = '';
         document.getElementById('labor-name-input').value = '';
         document.getElementById('labor-desc-input').value = '';
         document.getElementById('labor-days-input').value = 1.0;
-        document.getElementById('labor-ht-input').value = 400;
+        document.getElementById('labor-ht-input').value = 450;
         document.getElementById('labor-vat-input').value = '10';
         document.getElementById('labor-mode-input').value = 'pro';
         document.getElementById('labor-cure-input').value = 0;
@@ -3027,299 +3153,238 @@ alter publication supabase_realtime add table reno_projects;`;
       document.getElementById('labor-modal').classList.remove('hidden');
     }
 
-    function saveLaborForm(e) {
-      e.preventDefault();
+    function saveLaborForm(event) {
+      event.preventDefault();
       const proj = getActiveProject();
       const editId = document.getElementById('labor-edit-id').value;
-      const payload = {
-        id: editId || 'lab_' + Date.now(),
+      const obj = {
+        id: editId || ('lab_' + Date.now()),
         name: document.getElementById('labor-name-input').value.trim(),
         desc: document.getElementById('labor-desc-input').value.trim(),
-        days: parseFloat(document.getElementById('labor-days-input').value) || 0.5,
+        days: parseFloat(document.getElementById('labor-days-input').value) || 1.0,
         costHT: parseFloat(document.getElementById('labor-ht-input').value) || 0,
-        vat: parseFloat(document.getElementById('labor-vat-input').value) ?? 10,
-        mode: document.getElementById('labor-mode-input').value,
+        vat: parseFloat(document.getElementById('labor-vat-input').value) || 10,
+        mode: document.getElementById('labor-mode-input').value || 'pro',
         cureDays: parseFloat(document.getElementById('labor-cure-input').value) || 0
       };
-
       if (editId) {
         const idx = proj.labor.findIndex(l => l.id === editId);
-        if (idx > -1) proj.labor[idx] = payload;
+        if (idx >= 0) proj.labor[idx] = obj;
       } else {
-        proj.labor.push(payload);
+        proj.labor.push(obj);
       }
       saveAppState();
       closeModal('labor-modal');
       renderApp();
-      showToast('Work phase saved.');
     }
 
-    function deleteLaborPhase(phaseId) {
-      const proj = getActiveProject();
-      proj.labor = proj.labor.filter(l => l.id !== phaseId);
-      saveAppState();
-      renderApp();
-    }
-
-    // =========================================================================
-    // 7. MULTI-PROJECT MANAGEMENT, DUPLICATION & TEMPLATES
-    // =========================================================================
-    function openProjectModal(mode, preselectTpl = 'bathroom_generic') {
+    function openProjectModal(mode) {
       document.getElementById('project-modal-mode').value = mode;
-      const wrapper = document.getElementById('project-template-wrapper');
+      const tplWrap = document.getElementById('project-template-wrapper');
       const input = document.getElementById('project-name-input');
-      const sel = document.getElementById('project-template-select');
       if (mode === 'rename') {
-        document.getElementById('project-modal-title').textContent = 'Rename Current Project';
-        input.value = getActiveProject().name;
-        wrapper.classList.add('hidden');
+        const proj = getActiveProject();
+        document.getElementById('project-modal-title').textContent = 'Rename Project';
+        input.value = proj ? proj.name : '';
+        tplWrap.classList.add('hidden');
       } else {
         document.getElementById('project-modal-title').textContent = 'Create New Project';
         input.value = '';
-        sel.value = preselectTpl;
-        wrapper.classList.remove('hidden');
+        tplWrap.classList.remove('hidden');
       }
       document.getElementById('project-modal').classList.remove('hidden');
     }
 
-    function quickCreateFromTemplate(tplKey) {
-      openProjectModal('new', tplKey);
-    }
-
-    function saveProjectModal(e) {
-      e.preventDefault();
+    function saveProjectModal(event) {
+      event.preventDefault();
       const mode = document.getElementById('project-modal-mode').value;
       const name = document.getElementById('project-name-input').value.trim();
       if (!name) return;
 
       if (mode === 'rename') {
-        getActiveProject().name = name;
-        saveAppState();
-        closeModal('project-modal');
-        renderApp();
-        showToast('Project renamed & synced.');
+        const proj = getActiveProject();
+        if (proj) {
+          proj.name = name;
+          delete proj.name_fr;
+        }
       } else {
         const tpl = document.getElementById('project-template-select').value;
         const newProj = buildProjectFromTemplate(tpl, name);
+        newProj.hasLocalEdits = true;
         appState.projects.push(newProj);
         appState.activeProjectId = newProj.id;
         appState.currentView = 'workspace';
-        saveAppState();
-        closeModal('project-modal');
-        renderApp();
-        showToast(`Created project "${name}" & synced to Cloud!`);
       }
+      saveAppState();
+      closeModal('project-modal');
+      renderApp();
     }
 
-    function duplicateCurrentProject() {
-      duplicateProjectById(getActiveProject().id);
-    }
-
-    function duplicateProjectById(projId) {
-      const orig = appState.projects.find(p => p.id === projId);
-      if (!orig) return;
-      const copy = JSON.parse(JSON.stringify(orig));
-      copy.id = 'proj_' + Date.now();
-      copy.name = orig.name + ' (Option Copy)';
-      copy.updatedAt = new Date().toISOString();
-      appState.projects.push(copy);
-      appState.activeProjectId = copy.id;
+    function quickCreateFromTemplate(tplKey) {
+      const defaultNames = {
+        bathroom_generic: 'New Bathroom Renovation',
+        kitchen: 'New Kitchen Renovation',
+        house: 'Full House / Apartment Remodel',
+        blank: 'Custom Renovation Project'
+      };
+      const newProj = buildProjectFromTemplate(tplKey, defaultNames[tplKey] || 'New Project');
+      newProj.hasLocalEdits = true;
+      appState.projects.push(newProj);
+      appState.activeProjectId = newProj.id;
       appState.currentView = 'workspace';
       saveAppState();
       renderApp();
-      showToast(`⧉ Created independent copy "${copy.name}" (saved separately on Supabase)!`);
+      showToast(`✨ Created "${newProj.name}"!`);
     }
 
-    function shareSingleProjectFromHub(projId) {
-      appState.activeProjectId = projId;
-      openCloudModal();
+    function duplicateCurrentProject() {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const clone = JSON.parse(JSON.stringify(proj));
+      clone.id = 'proj_' + Date.now();
+      clone.name = `${proj.name} (Copy)`;
+      delete clone.name_fr;
+      clone.updatedAt = new Date().toISOString();
+      clone.hasLocalEdits = true;
+      appState.projects.push(clone);
+      appState.activeProjectId = clone.id;
+      saveAppState();
+      renderApp();
+      showToast(`⧉ Duplicated as "${clone.name}"!`);
     }
 
-    function deleteProjectById(projId) {
-      if (appState.projects.length <= 1) {
-        showToast('Cannot delete the only remaining project.');
-        return;
+    // Material Preset Packs (.json)
+    function openPresetModal() {
+      const proj = getActiveProject();
+      const sel = document.getElementById('preset-export-seg-select');
+      if (sel && proj) {
+        sel.innerHTML = (proj.segments || []).map(s =>
+          `<option value="${escapeHTML(s.id)}">${escapeHTML(L(s, 'title'))}</option>`
+        ).join('');
       }
-      const target = appState.projects.find(p => p.id === projId);
-      if (!target) return;
-      document.getElementById('confirm-modal-title').textContent = 'Delete Project?';
-      document.getElementById('confirm-modal-desc').textContent = `Are you sure you want to delete "${target.name}"?`;
-      document.getElementById('confirm-modal-btn').onclick = async () => {
-        appState.projects = appState.projects.filter(p => p.id !== projId);
-        if (appState.activeProjectId === projId) {
-          appState.activeProjectId = appState.projects[0].id;
-        }
-        if (supabaseClient) {
-          try { await supabaseClient.from('reno_projects').delete().eq('id', projId); } catch (e) {}
-        }
-        saveAppState(true);
-        closeModal('confirm-modal');
-        renderApp();
-        showToast('Project deleted.');
-      };
-      document.getElementById('confirm-modal').classList.remove('hidden');
+      document.getElementById('preset-modal').classList.remove('hidden');
     }
 
-    function openResetAllModal() {
-      document.getElementById('confirm-modal-title').textContent = 'Reset to Default Projects?';
-      document.getElementById('confirm-modal-desc').textContent = 'This restores the verified Île-de-France Bathroom and Guest WC projects to their initial state.';
-      document.getElementById('confirm-modal-btn').onclick = () => {
-        appState = createDefaultData();
-        saveAppState();
-        closeModal('confirm-modal');
-        renderApp();
-        showToast('Default projects restored.');
-      };
-      document.getElementById('confirm-modal').classList.remove('hidden');
+    function insertBuiltInKit(kitKey) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const defaultBath = createDefaultData().projects[0];
+      if (kitKey === 'drywall_kit') {
+        const seg = JSON.parse(JSON.stringify(defaultBath.segments[1]));
+        seg.id = 'seg_kit_' + Date.now();
+        proj.segments.push(seg);
+      } else if (kitKey === 'tiling_spec_kit') {
+        const seg = JSON.parse(JSON.stringify(defaultBath.segments[2]));
+        seg.id = 'seg_kit_' + Date.now();
+        proj.segments.push(seg);
+      }
+      saveAppState();
+      closeModal('preset-modal');
+      renderApp();
+      showToast('🧰 Material Preset Kit added to current project!');
     }
 
-    function exportAllProjectsJSON() {
-      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
-      triggerDownload(blob, `Renovation_Studio_All_Projects_${new Date().toISOString().slice(0, 10)}.json`);
-      showToast('💾 Exported full JSON backup file.');
+    function exportSegmentAsPresetJSON() {
+      const proj = getActiveProject();
+      const segId = document.getElementById('preset-export-seg-select').value;
+      const seg = (proj?.segments || []).find(s => s.id === segId);
+      if (!seg) return;
+      const payload = { _type: 'renovation_studio_preset_segment', segment: seg };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerDownload(blob, `${seg.title.replace(/[^a-z0-9_-]/gi, '_')}.preset.json`);
+      showToast('💾 Segment exported as reusable .json preset!');
     }
 
-    function handleImportJSON(e) {
-      const file = e.target.files && e.target.files[0];
+    function handleImportPresetJSON(event) {
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
+      reader.onload = function(e) {
         try {
-          const parsed = JSON.parse(evt.target.result);
-          if (parsed && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
-            appState = parsed;
+          const parsed = JSON.parse(e.target.result);
+          const proj = getActiveProject();
+          if (parsed && parsed.segment && proj) {
+            const segClone = JSON.parse(JSON.stringify(parsed.segment));
+            segClone.id = 'seg_preset_' + Date.now();
+            proj.segments.push(segClone);
             saveAppState();
+            closeModal('preset-modal');
             renderApp();
-            showToast('📂 All projects restored from JSON backup!');
+            showToast('🧰 Preset segment merged into active project!');
           } else {
-            showToast('Invalid JSON backup file.');
+            showToast('⚠️ Invalid preset file.');
           }
         } catch (err) {
-          showToast('Failed to parse JSON file.');
+          showToast('❌ Failed to read preset JSON.');
         }
+        event.target.value = '';
       };
       reader.readAsText(file);
-      e.target.value = '';
     }
 
-    // =========================================================================
-    // 8. SANDBOX-SAFE PRINTABLE HTML & CSV EXPORTS
-    // =========================================================================
+    // Export / Print Modal
     function openExportModal() {
       const proj = getActiveProject();
-      const m = calculateProjectMetrics(proj);
-      document.getElementById('export-summary-box').innerHTML = `
-        <div class="font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-1.5">${escapeHTML(L(proj, 'name'))}</div>
-        <div class="flex justify-between"><span>${escapeHTML(t('kpiFurniture'))} (TTC):</span><strong>${formatEUR(m.furnitureTTC)}</strong></div>
-        <div class="flex justify-between"><span>${escapeHTML(t('kpiMaterials'))} (TTC):</span><strong>${formatEUR(m.materialsTTC)}</strong></div>
-        <div class="flex justify-between"><span>${escapeHTML(t('kpiLabor'))} (TTC):</span><strong>${formatEUR(m.totalLaborTTC)}</strong></div>
-        <div class="flex justify-between text-sm font-extrabold text-brand-700 border-t border-slate-200 pt-1.5 mt-1.5">
-          <span>${escapeHTML(t('kpiGrandTotal'))}:</span><span>${formatEUR(m.grandTotalTTC)}</span>
-        </div>
-      `;
+      const m = computeProjectMetrics(proj);
+      const box = document.getElementById('export-summary-box');
+      if (box) {
+        box.innerHTML = `
+          <div class="font-extrabold text-slate-900">${escapeHTML(L(proj, 'name'))}</div>
+          <div class="flex justify-between"><span>${escapeHTML(t('kpiFurniture'))}:</span><strong>${fmtEUR(m.furnitureTTC)}</strong></div>
+          <div class="flex justify-between"><span>${escapeHTML(t('kpiMaterials'))}:</span><strong>${fmtEUR(m.materialsTTC)}</strong></div>
+          <div class="flex justify-between"><span>${escapeHTML(t('kpiLabor'))}:</span><strong>${fmtEUR(m.totalLaborTTC)}</strong></div>
+          <div class="flex justify-between border-t border-slate-200 pt-1 text-sm font-extrabold"><span>${escapeHTML(t('kpiGrandTotal'))}:</span><span class="text-brand-600">${fmtEUR(m.grandTotalTTC)}</span></div>
+        `;
+      }
       document.getElementById('export-modal').classList.remove('hidden');
     }
 
     function downloadPrintableHTML() {
       const proj = getActiveProject();
-      const m = calculateProjectMetrics(proj);
-      const isFR = appState.lang === 'fr';
-      const dateStr = new Date().toLocaleDateString(isFR ? 'fr-FR' : 'en-GB');
-      const dayUnit = isFR ? 'j' : 'd';
+      const m = computeProjectMetrics(proj);
+      const segHTML = (proj.segments || []).map(seg => `
+        <h2>${escapeHTML(L(seg, 'title'))}</h2>
+        <table>
+          <thead><tr><th>Item</th><th>Status</th><th>Store</th><th class="num">Qty</th><th class="num">Unit TTC</th><th class="num">Total TTC</th></tr></thead>
+          <tbody>
+            ${(seg.items || []).map(it => `
+              <tr>
+                <td><strong>${escapeHTML(L(it, 'name'))}</strong><br><small>${escapeHTML(L(it, 'desc'))}</small></td>
+                <td>${escapeHTML(t('status_' + (it.status || 'to_buy')))}</td>
+                <td>${escapeHTML(it.store || '')}</td>
+                <td class="num">${it.qty} ${escapeHTML(LUnit(it.unit))}</td>
+                <td class="num">${fmtEUR(it.priceTTC)}</td>
+                <td class="num"><strong>${fmtEUR((Number(it.qty) || 0) * (Number(it.priceTTC) || 0))}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `).join('');
 
-      const segTables = proj.segments.map(seg => {
-        const segTTC = seg.items.reduce((a, i) => a + (Number(i.qty) || 0) * (Number(i.priceTTC) || 0), 0);
-        const rows = seg.items.map(i => {
-          const lineTTC = (Number(i.qty) || 0) * (Number(i.priceTTC) || 0);
-          const statusLbl = t('status_' + (i.status || 'to_buy'));
-          return `<tr>
-            <td><strong>${escapeHTML(L(i, 'name'))}</strong><br><small style="color:#64748b">${escapeHTML(L(i, 'desc'))}</small></td>
-            <td>${escapeHTML(i.store)}</td>
-            <td>${escapeHTML(statusLbl)}</td>
-            <td style="text-align:right">${i.qty} ${escapeHTML(LUnit(i.unit))}</td>
-            <td style="text-align:right">${formatEUR(i.priceTTC)}</td>
-            <td style="text-align:right">${i.vat}%</td>
-            <td style="text-align:right"><strong>${formatEUR(lineTTC)}</strong></td>
-          </tr>`;
-        }).join('');
-        return `<h3>${escapeHTML(L(seg, 'title'))} — ${formatEUR(segTTC)} TTC</h3>
-          <table><thead><tr><th>${isFR ? 'Article' : 'Item'}</th><th>${isFR ? 'Enseigne' : 'Store'}</th><th>${isFR ? 'Statut' : 'Status'}</th><th style="text-align:right">${isFR ? 'Qté' : 'Qty'}</th><th style="text-align:right">${isFR ? 'Prix Unit. TTC' : 'Unit TTC'}</th><th style="text-align:right">TVA</th><th style="text-align:right">Total TTC</th></tr></thead><tbody>${rows}</tbody></table>`;
-      }).join('');
-
-      const laborRows = proj.labor.map((p, idx) => {
-        const ttc = p.mode === 'pro' ? Number(p.costHT) * (1 + Number(p.vat || 10) / 100) : 0;
-        return `<tr>
-          <td><strong>${idx + 1}. ${escapeHTML(L(p, 'name'))}</strong><br><small style="color:#64748b">${escapeHTML(L(p, 'desc'))}</small></td>
-          <td>${p.mode === 'pro' ? escapeHTML(t('modePro')) : escapeHTML(t('modeDiy'))}</td>
-          <td style="text-align:right">${p.days} ${dayUnit}</td>
-          <td style="text-align:right">${p.mode === 'pro' ? formatEUR(p.costHT) : '€0.00'}</td>
-          <td style="text-align:right"><strong>${formatEUR(ttc)}</strong></td>
-        </tr>`;
-      }).join('');
-
-      const htmlDoc = `<!DOCTYPE html><html lang="${appState.lang}"><head><meta charset="UTF-8"><title>${escapeHTML(L(proj, 'name'))}</title>
-      <style>
-        body { font-family: sans-serif; color: #0f172a; margin: 20px; font-size: 11px; }
-        h1 { font-size: 18px; margin-bottom: 4px; }
-        h3 { font-size: 13px; background: #f1f5f9; padding: 6px 10px; border-left: 4px solid #254edb; margin-top: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        th, td { border-bottom: 1px solid #e2e8f0; padding: 6px; text-align: left; }
-        th { background: #f8fafc; font-size: 10px; text-transform: uppercase; }
-        .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
-        .kpi { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #f8fafc; }
-      </style></head>
-      <body onload="setTimeout(()=>window.print(),300)">
-        <h1>${escapeHTML(L(proj, 'name'))} — Renovation Studio (${dateStr})</h1>
-        <div class="kpis">
-          <div class="kpi"><div>${escapeHTML(t('kpiFurniture'))}</div><strong style="font-size:15px">${formatEUR(m.furnitureTTC)}</strong></div>
-          <div class="kpi"><div>${escapeHTML(t('kpiMaterials'))}</div><strong style="font-size:15px">${formatEUR(m.materialsTTC)}</strong></div>
-          <div class="kpi"><div>${escapeHTML(t('kpiLabor'))}</div><strong style="font-size:15px">${formatEUR(m.totalLaborTTC)}</strong></div>
-          <div class="kpi" style="background:#0f172a;color:#fff"><div>${escapeHTML(t('kpiGrandTotal'))}</div><strong style="font-size:15px">${formatEUR(m.grandTotalTTC)}</strong></div>
-        </div>
-        ${segTables}
-        <h3>${escapeHTML(t('laborHeader'))} (${formatEUR(m.totalLaborTTC)} TTC)</h3>
-        <table><thead><tr><th>Phase</th><th>Mode</th><th style="text-align:right">${escapeHTML(t('thDays'))}</th><th style="text-align:right">HT</th><th style="text-align:right">TTC</th></tr></thead>
-        <tbody>${laborRows}
-        <tr><td><strong>${escapeHTML(t('travelRowTitle'))} (${m.proDays.toFixed(1)}${dayUnit} × €${proj.travelDailyHT} HT)</strong></td><td>${escapeHTML(t('modePro'))}</td><td style="text-align:right">${m.proDays.toFixed(1)} ${dayUnit}</td><td style="text-align:right">${formatEUR(m.travelHT)}</td><td style="text-align:right"><strong>${formatEUR(m.travelTTC)}</strong></td></tr>
-        </tbody></table>
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHTML(L(proj, 'name'))}</title>
+      <style>body{font-family:sans-serif;padding:20px;font-size:12px;color:#0f172a}table{width:100%;border-collapse:collapse;margin-bottom:16px}th,td{border-bottom:1px solid #cbd5e1;padding:6px;text-align:left}.num{text-align:right}h2{background:#f1f5f9;padding:6px 10px;border-left:4px solid #254edb}</style>
+      </head><body onload="setTimeout(()=>window.print(),300)">
+      <h1>${escapeHTML(L(proj, 'name'))} — ${fmtEUR(m.grandTotalTTC)} TTC</h1>
+      ${segHTML}
       </body></html>`;
-
-      triggerDownload(new Blob([htmlDoc], { type: 'text/html;charset=utf-8' }), `${L(proj, 'name').replace(/[^a-z0-9]/gi, '_')}_Report_${appState.lang.toUpperCase()}.html`);
-      showToast(isFR ? 'Rapport A4 prêt à imprimer téléchargé !' : 'Print-ready HTML report downloaded!');
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      triggerDownload(blob, `${proj.name.replace(/[^a-z0-9_-]/gi, '_')}_Report.html`);
     }
 
     function downloadProjectCSV() {
       const proj = getActiveProject();
-      const isFR = appState.lang === 'fr';
-      const rows = [[
-        'Segment',
-        isFR ? 'Article / Phase' : 'Item / Phase',
-        'Description',
-        isFR ? 'Enseigne / Mode' : 'Store / Mode',
-        isFR ? 'Statut' : 'Status',
-        isFR ? 'Qté / Jours' : 'Qty / Days',
-        isFR ? 'Unité' : 'Unit',
-        isFR ? 'Prix Unit. TTC / Coût HT' : 'Unit Price TTC / Cost HT',
-        'TVA %',
-        'Total TTC (€)',
-        'URL'
-      ]];
-
-      proj.segments.forEach(seg => {
-        seg.items.forEach(i => {
-          const lineTTC = (Number(i.qty) || 0) * (Number(i.priceTTC) || 0);
-          rows.push([L(seg, 'title'), L(i, 'name'), L(i, 'desc'), i.store, t('status_' + (i.status || 'to_buy')), i.qty, LUnit(i.unit), Number(i.priceTTC).toFixed(2), i.vat, lineTTC.toFixed(2), i.link || '']);
+      const rows = [['Segment', 'Item / Phase', 'Status / Mode', 'Qty / Days', 'Unit', 'Unit Price TTC / Cost HT', 'Total TTC']];
+      (proj.segments || []).forEach(seg => {
+        (seg.items || []).forEach(it => {
+          rows.push([L(seg, 'title'), L(it, 'name'), it.status || 'to_buy', it.qty, LUnit(it.unit), it.priceTTC, ((Number(it.qty) || 0) * (Number(it.priceTTC) || 0)).toFixed(2)]);
         });
       });
-
-      proj.labor.forEach(p => {
-        const ttc = p.mode === 'pro' ? Number(p.costHT) * (1 + Number(p.vat || 10) / 100) : 0;
-        rows.push([t('laborHeader'), L(p, 'name'), L(p, 'desc'), p.mode === 'pro' ? t('modePro') : t('modeDiy'), 'LABOR', p.days, isFR ? 'jours' : 'days', Number(p.costHT).toFixed(2), p.vat, ttc.toFixed(2), '']);
+      (proj.labor || []).forEach(ph => {
+        const ttc = ph.mode === 'pro' ? (Number(ph.costHT) * (1 + Number(ph.vat ?? 10) / 100)).toFixed(2) : '0.00';
+        rows.push(['Labor', L(ph, 'name'), ph.mode, ph.days, 'days', ph.costHT, ttc]);
       });
-
       const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-      triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `${L(proj, 'name').replace(/[^a-z0-9]/gi, '_')}_Budget_${appState.lang.toUpperCase()}.csv`);
-      showToast(isFR ? 'Tableur CSV téléchargé !' : 'CSV spreadsheet downloaded!');
+      triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${proj.name.replace(/[^a-z0-9_-]/gi, '_')}.csv`);
     }
 
     function triggerDownload(blob, filename) {
@@ -3333,23 +3398,20 @@ alter publication supabase_realtime add table reno_projects;`;
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     }
 
-    function closeModal(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
-
     function showToast(msg) {
       const box = document.getElementById('toast-container');
+      if (!box) return;
       const el = document.createElement('div');
-      el.className = 'bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 transition-opacity duration-300';
+      el.className = 'bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 transition-opacity duration-300';
       el.textContent = msg;
       box.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
     }
 
-    function escapeHTML(str) {
-      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
+    // Boot Application
     window.addEventListener('DOMContentLoaded', () => {
       parseURLMagicParams();
       renderApp();
