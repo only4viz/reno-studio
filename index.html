@@ -1616,6 +1616,7 @@
     let realtimeChannel = null;
     let syncTimeout = null;
     let isApplyingRemoteUpdate = false;
+    let currentCloudState = 'local';
 
     // Reads across all V1/V2/V3 storage keys so no previous work is ever lost
     function loadAppState() {
@@ -1752,6 +1753,7 @@
     // 2B. SMART SUPABASE REAL-TIME SYNC (NEVER OVERWRITES NEWER LOCAL PC EDITS!)
     // =========================================================================
     function setCloudBadge(stateKey, customText) {
+      currentCloudState = stateKey || 'local';
       const dot = document.getElementById('cloud-status-dot');
       const txt = document.getElementById('cloud-status-text');
       const badge = document.getElementById('cloud-status-badge');
@@ -1759,18 +1761,22 @@
 
       if (stateKey === 'live') {
         dot.textContent = '🟢';
+        txt.setAttribute('data-i18n', 'cloudLive');
         txt.textContent = customText || t('cloudLive');
         badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer';
       } else if (stateKey === 'syncing') {
         dot.textContent = '🟡';
+        txt.setAttribute('data-i18n', 'cloudSyncing');
         txt.textContent = customText || t('cloudSyncing');
         badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 transition cursor-pointer';
       } else if (stateKey === 'error') {
         dot.textContent = '🔴';
+        txt.setAttribute('data-i18n', 'cloudError');
         txt.textContent = customText || t('cloudError');
         badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 transition cursor-pointer';
       } else {
         dot.textContent = '⚪';
+        txt.setAttribute('data-i18n', 'cloudLocal');
         txt.textContent = customText || t('cloudLocal');
         badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer';
       }
@@ -2386,6 +2392,9 @@ alter publication supabase_realtime add table reno_projects;`;
         const key = el.getAttribute('data-i18n');
         el.textContent = t(key);
       });
+
+      // Keep Cloud Status Badge text & color locked to its actual live state
+      setCloudBadge(currentCloudState);
 
       // 2. Language buttons
       const btnEn = document.getElementById('lang-btn-en');
