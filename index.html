@@ -13,9 +13,9 @@
     // =========================================================================
     // ★ SUPABASE CLOUD CREDENTIALS — PASTE ONCE HERE (LINES 15–16) ★
     // =========================================================================
-    // Paste your Supabase Project URL and Anon Public Key between the quotes below:
-    const DEFAULT_SUPABASE_URL = 'https://pecajbfyhwkipqexwmhw.supabase.co'; // e.g. 'https://abcdefghijk.supabase.co'
-    const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlY2FqYmZ5aHdraXBxZXh3bWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NjEzMzksImV4cCI6MjExMDQzNzMzOX0.BVKZvtE21wXGw25ZqYr-Cvg8xgYGzdFpz3w67W2HEfQ'; // e.g. 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    // Your clean Supabase Base URL is already set below (NO /rest/v1/ at the end!):
+    const DEFAULT_SUPABASE_URL = 'https://pecajbfyhwkipqexwmhw.supabase.co';
+    const DEFAULT_SUPABASE_ANON_KEY = ''; // <-- Paste your anon public key (eyJ...) here!
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -914,11 +914,11 @@
             </p>
           </div>
 
-          <!-- Step 2: Supabase Credentials -->
+            <!-- Step 2: Supabase Credentials -->
           <div class="space-y-3">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL (Project Settings → API)</label>
-              <input type="url" id="sb-url-input" placeholder="https://abcdefghijk.supabase.co" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm font-mono" />
+              <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL (or Dashboard Link / Project ID)</label>
+              <input type="text" id="sb-url-input" placeholder="https://abcdefghijk.supabase.co" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm font-mono" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Anon Public Key (<code>anon</code> / <code>public</code>)</label>
@@ -1643,12 +1643,59 @@
           }
         }
       } catch (e) {
-        console.warn('Storage read error:', e);
+        console.warn('Could not read state from localStorage:', e);
       }
       return createDefaultData();
     }
 
+    // Automatically converts Supabase Dashboard URLs or /rest/v1/ links into the valid https://<ref>.supabase.co base URL
+    function normalizeSupabaseUrl(rawUrl) {
+      if (!rawUrl) return '';
+      let s = String(rawUrl).trim().replace(/^['"]+|['"]+$/g, '');
+      if (!s) return '';
+
+      // Explicitly strip /rest/v1 or any trailing path so supabase-js never doubles /rest/v1/rest/v1
+      s = s.replace(/\/rest\/v1\/?.*$/i, '').replace(/\/+$/, '');
+
+      // 1. If user pasted a Supabase Dashboard link: https://supabase.com/dashboard/project/<ref>/...
+      const dashMatch = s.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+      if (dashMatch && dashMatch[1]) {
+        return `https://${dashMatch[1].toLowerCase()}.supabase.co`;
+      }
+
+      // 2. If user pasted https://<ref>.supabase.co/rest/v1/... or any extra path, keep ONLY the origin
+      const apiMatch = s.match(/https?:\/\/([a-z0-9-]+)\.supabase\.(co|in)/i);
+      if (apiMatch && apiMatch[1]) {
+        return `https://${apiMatch[1].toLowerCase()}.supabase.${apiMatch[2].toLowerCase()}`;
+      }
+
+      // 3. If user pasted just the 20-char project reference ID
+      if (/^[a-z0-9]{15,25}$/i.test(s)) {
+        return `https://${s.toLowerCase()}.supabase.co`;
+      }
+
+      if (!/^https?:\/\//i.test(s)) {
+        s = 'https://' + s;
+      }
+      try {
+        const u = new URL(s);
+        return u.origin;
+      } catch (e) {
+        return s.replace(/\/+$/, '');
+      }
+    }
+
+    function normalizeSupabaseKey(rawKey) {
+      if (!rawKey) return '';
+      return String(rawKey).trim().replace(/^['"]+|['"]+$/g, '').replace(/^Bearer\s+/i, '').trim();
+    }
+
     function loadCloudConfig() {
+      const defUrl = normalizeSupabaseUrl(DEFAULT_SUPABASE_URL);
+      const defKey = normalizeSupabaseKey(DEFAULT_SUPABASE_ANON_KEY);
+
+      let storedUrl = '';
+      let storedKey = '';
       try {
         const candidateCfgKeys = [
           CLOUD_CONFIG_KEY,
@@ -1659,17 +1706,27 @@
           const raw = localStorage.getItem(k);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && parsed.url && parsed.key) return parsed;
+            if (parsed) {
+              if (parsed.url && !storedUrl) storedUrl = normalizeSupabaseUrl(parsed.url);
+              if (parsed.key && !storedKey) storedKey = normalizeSupabaseKey(parsed.key);
+            }
           }
         }
       } catch (e) {}
-      return {
-        url: DEFAULT_SUPABASE_URL ? DEFAULT_SUPABASE_URL.trim() : '',
-        key: DEFAULT_SUPABASE_ANON_KEY ? DEFAULT_SUPABASE_ANON_KEY.trim() : ''
+
+      const finalCfg = {
+        url: defUrl || storedUrl || 'https://pecajbfyhwkipqexwmhw.supabase.co',
+        key: defKey || storedKey || ''
       };
+      try {
+        localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(finalCfg));
+      } catch (e) {}
+      return finalCfg;
     }
 
     function saveCloudConfig() {
+      cloudConfig.url = normalizeSupabaseUrl(cloudConfig.url);
+      cloudConfig.key = normalizeSupabaseKey(cloudConfig.key);
       try {
         localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
       } catch (e) {}
@@ -1747,8 +1804,8 @@
           }
         }
         if (urlSbUrl && urlSbKey) {
-          cloudConfig.url = urlSbUrl.trim();
-          cloudConfig.key = urlSbKey.trim();
+          cloudConfig.url = normalizeSupabaseUrl(urlSbUrl);
+          cloudConfig.key = normalizeSupabaseKey(urlSbKey);
           saveCloudConfig();
         }
       } catch (e) {
@@ -1757,6 +1814,8 @@
     }
 
     async function initSupabaseCloud(showSuccessToast = false) {
+      cloudConfig.url = normalizeSupabaseUrl(cloudConfig.url);
+      cloudConfig.key = normalizeSupabaseKey(cloudConfig.key);
       if (!cloudConfig.url || !cloudConfig.key || !window.supabase) {
         setCloudBadge('local');
         return;
@@ -2007,24 +2066,28 @@
     }
 
     function openCloudModal() {
-      document.getElementById('sb-url-input').value = cloudConfig.url || '';
-      document.getElementById('sb-key-input').value = cloudConfig.key || '';
+      document.getElementById('sb-url-input').value = normalizeSupabaseUrl(cloudConfig.url) || '';
+      document.getElementById('sb-key-input').value = normalizeSupabaseKey(cloudConfig.key) || '';
       document.getElementById('cloud-modal').classList.remove('hidden');
     }
 
     async function connectAndSyncCloud() {
-      const url = document.getElementById('sb-url-input').value.trim();
-      const key = document.getElementById('sb-key-input').value.trim();
+      const rawUrl = document.getElementById('sb-url-input').value;
+      const rawKey = document.getElementById('sb-key-input').value;
+      const url = normalizeSupabaseUrl(rawUrl);
+      const key = normalizeSupabaseKey(rawKey);
       if (!url || !key) {
         showToast('⚠️ Please enter both your Supabase Project URL and Anon Key.');
         return;
       }
+      document.getElementById('sb-url-input').value = url;
+      document.getElementById('sb-key-input').value = key;
       cloudConfig.url = url;
       cloudConfig.key = key;
       saveCloudConfig();
       supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.key);
-      await pushAllProjectsToCloud(false);
-      await initSupabaseCloud(true);
+      const pushed = await pushAllProjectsToCloud(false);
+      await initSupabaseCloud(pushed);
     }
 
     function disconnectCloud() {
