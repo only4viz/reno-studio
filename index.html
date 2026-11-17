@@ -105,7 +105,7 @@
             <span>🗂️</span> <span data-i18n="allProjectsHub">All Projects Hub</span>
           </button>
 
-          <div id="role-switcher-group" class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+          <div id="role-switcher-group" class="inline-flex rounded-xl bg-slate-200/90 p-1 border border-slate-300/80">
             <button type="button" onclick="setRole('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">
               👑 <span data-i18n="roleOwner">Owner</span>
             </button>
@@ -120,7 +120,7 @@
           </button>
 
           <!-- Instant Language Switcher -->
-          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+          <div class="inline-flex rounded-xl bg-slate-200/90 p-1 border border-slate-300/80">
             <button type="button" onclick="setLanguage('en')" id="lang-btn-en" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">EN</button>
             <button type="button" onclick="setLanguage('fr')" id="lang-btn-fr" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">FR</button>
           </div>
@@ -549,7 +549,14 @@
                   <span class="text-[11px] text-slate-400">/d</span>
                 </div>
               </td>
-              <td class="py-3.5 px-3 text-right text-xs text-slate-500">10%</td>
+              <td class="py-3.5 px-3 text-right">
+                <select id="travel-vat-select" onchange="updateTravelVat(this.value)" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                  <option value="0">0%</option>
+                  <option value="5.5">5.5%</option>
+                  <option value="10" selected>10%</option>
+                  <option value="20">20%</option>
+                </select>
+              </td>
               <td class="py-3.5 px-4 text-right font-extrabold text-slate-900" id="travel-total-ttc">€440.00</td>
               <td class="py-3.5 px-3 no-print"></td>
             </tr>
@@ -1350,6 +1357,7 @@
             boxCoverageM2: 1.62,
             wastePct: 15,
             travelDailyHT: 50,
+            travelVat: 10,
             planImages: [],
             contractorNote: 'Ready for demolition & rough plumbing inspection. 8 boxes of ARTENS Denali 30×90cm tiles & Valentin Ø90 siphon already delivered on site.',
             contractorNoteUpdatedAt: 'Initial Plan',
@@ -1418,6 +1426,7 @@
             boxCoverageM2: 1.44,
             wastePct: 10,
             travelDailyHT: 40,
+            travelVat: 10,
             planImages: [],
             contractorNote: 'Starter template for a secondary WC refresh.',
             contractorNoteUpdatedAt: 'Template',
@@ -1472,6 +1481,7 @@
           boxCoverageM2: 1.50,
           wastePct: 15,
           travelDailyHT: 50,
+          travelVat: 10,
           planImages: [],
           contractorNote: 'Standard bathroom template — upload your floor plan & adjust quantities.',
           contractorNoteUpdatedAt: 'Template',
@@ -1512,6 +1522,7 @@
           boxCoverageM2: 1.20,
           wastePct: 10,
           travelDailyHT: 50,
+          travelVat: 10,
           planImages: [],
           contractorNote: 'Kitchen remodel template — verify appliance circuits (32A plaque, 20A oven/dishwasher).',
           contractorNoteUpdatedAt: 'Template',
@@ -1553,6 +1564,7 @@
           boxCoverageM2: 2.10,
           wastePct: 10,
           travelDailyHT: 60,
+          travelVat: 10,
           planImages: [],
           contractorNote: 'Full apartment/house renovation template.',
           contractorNoteUpdatedAt: 'Template',
@@ -1593,6 +1605,7 @@
         boxCoverageM2: 1.50,
         wastePct: 10,
         travelDailyHT: 50,
+        travelVat: 10,
         planImages: [],
         contractorNote: '',
         contractorNoteUpdatedAt: '',
@@ -1637,6 +1650,7 @@
                 if (!Array.isArray(p.planImages)) p.planImages = [];
                 if (typeof p.netAreaM2 !== 'number') p.netAreaM2 = 10.72;
                 if (typeof p.boxCoverageM2 !== 'number') p.boxCoverageM2 = 1.62;
+                if (typeof p.travelVat !== 'number') p.travelVat = 10;
                 if (p.id === 'proj_idf_bath' && typeof p.useDefaultBathSvg === 'undefined') p.useDefaultBathSvg = true;
               });
               return parsed;
@@ -2326,9 +2340,10 @@ alter publication supabase_realtime add table reno_projects;`;
       });
 
       const travelDailyHT = Number(proj.travelDailyHT) || 0;
+      const travelVat = Number(proj.travelVat ?? 10);
       const travelHT = proDays * travelDailyHT;
-      const travelTTC = travelHT * 1.10;
-      const savedTravelTTC = diyDays * travelDailyHT * 1.10;
+      const travelTTC = travelHT * (1 + travelVat / 100);
+      const savedTravelTTC = diyDays * travelDailyHT * (1 + travelVat / 100);
 
       const totalLaborHT = proLaborHT + travelHT;
       const totalLaborTTC = proLaborTTC + travelTTC;
@@ -2344,7 +2359,7 @@ alter publication supabase_realtime add table reno_projects;`;
         furnitureTTC, furnitureHT,
         materialsTTC, materialsHT,
         proDays, diyDays,
-        travelHT, travelTTC,
+        travelVat, travelHT, travelTTC,
         totalLaborHT, totalLaborTTC,
         totalSavedTTC, grandTotalTTC,
         countToBuy, countOrdered, countDelivered, totalItems, procuredPct,
@@ -2396,20 +2411,20 @@ alter publication supabase_realtime add table reno_projects;`;
       // Keep Cloud Status Badge text & color locked to its actual live state
       setCloudBadge(currentCloudState);
 
-      // 2. Language buttons
+      // 2. Language buttons (Blue active highlight)
       const btnEn = document.getElementById('lang-btn-en');
       const btnFr = document.getElementById('lang-btn-fr');
       if (btnEn && btnFr) {
-        btnEn.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'en' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
-        btnFr.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.lang === 'fr' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
+        btnEn.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer ${appState.lang === 'en' ? 'bg-brand-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
+        btnFr.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer ${appState.lang === 'fr' ? 'bg-brand-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
       }
 
-      // 3. Role buttons
+      // 3. Role buttons (Blue active highlight)
       const btnOwner = document.getElementById('role-btn-owner');
       const btnContractor = document.getElementById('role-btn-contractor');
       if (btnOwner && btnContractor) {
-        btnOwner.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.role === 'owner' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`;
-        btnContractor.className = `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${appState.role === 'contractor' ? 'bg-amber-400 text-slate-950 shadow-2xs' : 'text-slate-600'}`;
+        btnOwner.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer ${appState.role === 'owner' ? 'bg-brand-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
+        btnContractor.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer ${appState.role === 'contractor' ? 'bg-brand-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
       }
 
       // 4. Single-project lock visibility
@@ -2912,6 +2927,8 @@ alter publication supabase_realtime add table reno_projects;`;
       document.getElementById('travel-rate-label').textContent = Number(proj.travelDailyHT || 50).toFixed(0);
       document.getElementById('travel-days-cell').textContent = `${m.proDays.toFixed(1)} d`;
       document.getElementById('travel-rate-input').value = proj.travelDailyHT ?? 50;
+      const travelVatEl = document.getElementById('travel-vat-select');
+      if (travelVatEl) travelVatEl.value = String(proj.travelVat ?? 10);
       document.getElementById('travel-total-ttc').textContent = fmtEUR(m.travelTTC);
     }
 
@@ -2944,6 +2961,15 @@ alter publication supabase_realtime add table reno_projects;`;
       const proj = getActiveProject();
       if (!proj) return;
       proj.travelDailyHT = Math.max(0, parseFloat(val) || 0);
+      saveAppState();
+      renderApp();
+    }
+
+    function updateTravelVat(val) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const parsed = parseFloat(val);
+      proj.travelVat = isNaN(parsed) ? 10 : Math.max(0, parsed);
       saveAppState();
       renderApp();
     }
@@ -3457,6 +3483,8 @@ alter publication supabase_realtime add table reno_projects;`;
         const ttc = ph.mode === 'pro' ? (Number(ph.costHT) * (1 + Number(ph.vat ?? 10) / 100)).toFixed(2) : '0.00';
         rows.push(['Labor', L(ph, 'name'), ph.mode, ph.days, 'days', ph.costHT, ttc]);
       });
+      const m = computeProjectMetrics(proj);
+      rows.push(['Labor', t('travelRowTitle'), 'auto-scaled', m.proDays.toFixed(1), 'days', proj.travelDailyHT ?? 50, m.travelTTC.toFixed(2)]);
       const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${proj.name.replace(/[^a-z0-9_-]/gi, '_')}.csv`);
     }
